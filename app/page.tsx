@@ -49,12 +49,13 @@ import { MultiTenantTestingViewer } from '../frontend/src/components/MultiTenant
 import { FileManagementViewer } from '../frontend/src/components/FileManagementViewer';
 import { CrmViewer } from '../frontend/src/components/CrmViewer';
 import { OrcamentoViewer } from '../frontend/src/components/OrcamentoViewer';
+import { CreditoViewer } from '../frontend/src/components/CreditoViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orcamentos' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+    'overview' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
   >('overview');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
@@ -298,6 +299,17 @@ export default function ArchitectureDashboard() {
             Orçamento & Formação de Preço (CPQ)
           </button>
           <button
+            onClick={() => setActiveTab('credito')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'credito'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Crédito & Risco (Serasa Mock)
+          </button>
+          <button
             onClick={() => setActiveTab('crm')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'crm'
@@ -425,6 +437,9 @@ export default function ArchitectureDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         {/* TAB: ORÇAMENTO TÉCNICO & FORMAÇÃO DE PREÇO CPQ */}
         {activeTab === 'orcamentos' && <OrcamentoViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: CRÉDITO & RISCO (SERASA MOCK ADAPTER + MOTOR) */}
+        {activeTab === 'credito' && <CreditoViewer empresaAtiva={empresaAtiva} />}
 
         {/* TAB: CRM INDUSTRIAL & CICLO COMERCIAL */}
         {activeTab === 'crm' && <CrmViewer empresaAtiva={empresaAtiva} />}
