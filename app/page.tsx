@@ -48,12 +48,13 @@ import { UserManagementViewer } from '../frontend/src/components/UserManagementV
 import { MultiTenantTestingViewer } from '../frontend/src/components/MultiTenantTestingViewer';
 import { FileManagementViewer } from '../frontend/src/components/FileManagementViewer';
 import { CrmViewer } from '../frontend/src/components/CrmViewer';
+import { OrcamentoViewer } from '../frontend/src/components/OrcamentoViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+    'overview' | 'orcamentos' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
   >('overview');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
@@ -286,6 +287,17 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('orcamentos')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'orcamentos'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-amber-800 bg-amber-50/80 hover:bg-amber-100'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Orçamento & Formação de Preço (CPQ)
+          </button>
+          <button
             onClick={() => setActiveTab('crm')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'crm'
@@ -411,6 +423,9 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: ORÇAMENTO TÉCNICO & FORMAÇÃO DE PREÇO CPQ */}
+        {activeTab === 'orcamentos' && <OrcamentoViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: CRM INDUSTRIAL & CICLO COMERCIAL */}
         {activeTab === 'crm' && <CrmViewer empresaAtiva={empresaAtiva} />}
 
