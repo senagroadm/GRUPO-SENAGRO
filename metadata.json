@@ -1,0 +1,6 @@
+{
+  "name": "ERP Industrial Multiempresa",
+  "description": "Sistema ERP industrial multiempresa para 5 CNPJs (MWAM, Oliveira e Amorim, Senagro, Tritech Corte Dobra, Tritech Industrial) com arquitetura modular, isolamento de dados por empresa_id e trilha de auditoria.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

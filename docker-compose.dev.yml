@@ -1,0 +1,44 @@
+services:
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: nexus-erp-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - APP_URL=http://localhost:3000
+      - DATABASE_URL=postgresql://nexus_user:nexus_dev_password@postgres-dev:5432/nexus_erp_dev
+      - JWT_SECRET=dev_jwt_secret_nexus_industrial_erp_12345
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+
+  postgres-dev:
+    image: postgres:16-alpine
+    container_name: nexus-erp-postgres-dev
+    environment:
+      POSTGRES_USER: nexus_user
+      POSTGRES_PASSWORD: nexus_dev_password
+      POSTGRES_DB: nexus_erp_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_user -d nexus_erp_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
+    driver: local
