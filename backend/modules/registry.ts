@@ -25,6 +25,18 @@ export const MODULOS_ERP: ModuloDefinition[] = [
     statusIntegracao: 'PRONTO_PARA_IMPLEMENTACAO',
   },
   {
+    id: 'mod-arquivos',
+    codigo: 'ARQUIVOS',
+    nome: 'Gestão de Arquivos & Storage de Objetos',
+    categoria: 'Core',
+    descricao: 'Storage de objetos desacoplado do PostgreSQL com vínculo polimórfico, deduplicação SHA-256, versionamento de desenhos CAD/DXF e auditoria de downloads.',
+    entidadesPrincipais: ['Arquivo', 'ArquivoLog', 'ArquivoVersao'],
+    isolamentoEmpresa: 'ESTRITO_TRANSACIONAL',
+    dependenciasInternas: ['ADMINISTRACAO'],
+    dependenciasExternas: ['Object Storage (Local Disk / S3 / MinIO)'],
+    statusIntegracao: 'PRONTO_PARA_IMPLEMENTACAO',
+  },
+  {
     id: 'mod-crm',
     codigo: 'CRM',
     nome: 'CRM & Prospecção Industrial',

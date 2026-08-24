@@ -33,6 +33,8 @@ import {
   Check,
   ArrowRightLeft,
   Crown,
+  Target,
+  FolderLock,
 } from 'lucide-react';
 import { EMPRESAS_GRUPO, Empresa } from '../backend/core/types/company';
 import { MODULOS_ERP, ModuloDefinition } from '../backend/modules/registry';
@@ -44,12 +46,14 @@ import { SecurityMatrixViewer } from '../frontend/src/components/SecurityMatrixV
 import { CompanyManagementViewer } from '../frontend/src/components/CompanyManagementViewer';
 import { UserManagementViewer } from '../frontend/src/components/UserManagementViewer';
 import { MultiTenantTestingViewer } from '../frontend/src/components/MultiTenantTestingViewer';
+import { FileManagementViewer } from '../frontend/src/components/FileManagementViewer';
+import { CrmViewer } from '../frontend/src/components/CrmViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+    'overview' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
   >('overview');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
@@ -282,6 +286,28 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('crm')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'crm'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100'
+            }`}
+          >
+            <Target className="w-4 h-4" />
+            CRM & Ciclo Comercial (Módulo 06)
+          </button>
+          <button
+            onClick={() => setActiveTab('arquivos')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'arquivos'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100'
+            }`}
+          >
+            <FolderLock className="w-4 h-4" />
+            Arquivos & Object Storage
+          </button>
+          <button
             onClick={() => setActiveTab('empresas_crud')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'empresas_crud'
@@ -385,6 +411,12 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: CRM INDUSTRIAL & CICLO COMERCIAL */}
+        {activeTab === 'crm' && <CrmViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: STORAGE DE ARQUIVOS & DOCUMENTOS */}
+        {activeTab === 'arquivos' && <FileManagementViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: EMPRESAS & CNPJS CRUD */}
         {activeTab === 'empresas_crud' && <CompanyManagementViewer />}
 
