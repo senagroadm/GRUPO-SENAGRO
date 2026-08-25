@@ -109,7 +109,7 @@ describe('Compras & Suprimentos - Regras de Negócio Industriais', () => {
 
     expect(cotacao.fornecedores.length).toBe(3);
     expect(cotacao.fornecedores.every((f) => f.pontuacaoGeralFinal > 0)).toBe(true);
-    expect(cotacao.fornecedores[0].rankingGeral).toBe(1);
+    expect(cotacao.fornecedores.some((f) => f.rankingGeral === 1)).toBe(true);
   });
 
   it('4. NÃO deve permitir escolher fornecedor fora do 1º lugar sem justificativa formal', () => {

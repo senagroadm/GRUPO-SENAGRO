@@ -38,6 +38,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   Boxes,
+  Compass,
 } from 'lucide-react';
 import { EMPRESAS_GRUPO, Empresa } from '../backend/core/types/company';
 import { MODULOS_ERP, ModuloDefinition } from '../backend/modules/registry';
@@ -56,13 +57,14 @@ import { CreditoViewer } from '../frontend/src/components/CreditoViewer';
 import { PedidoViewer } from '../frontend/src/components/PedidoViewer';
 import { EstoqueViewer } from '../frontend/src/components/EstoqueViewer';
 import { ComprasViewer } from '../frontend/src/components/ComprasViewer';
+import { EngenhariaViewer } from '../frontend/src/components/EngenhariaViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('compras');
+    'overview' | 'engenharia' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('engenharia');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -294,6 +296,17 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('engenharia')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'engenharia'
+                ? 'bg-cyan-600 text-white shadow-xs'
+                : 'text-cyan-800 bg-cyan-50/80 hover:bg-cyan-100'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            Engenharia de Produto (Módulo 04)
+          </button>
+          <button
             onClick={() => setActiveTab('compras')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'compras'
@@ -474,6 +487,9 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: ENGENHARIA DE PRODUTO, BOM & ROTEIROS */}
+        {activeTab === 'engenharia' && <EngenhariaViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: COMPRAS & GESTÃO DE SUPRIMENTOS */}
         {activeTab === 'compras' && <ComprasViewer empresaAtiva={empresaAtiva} />}
 
