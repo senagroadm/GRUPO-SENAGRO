@@ -1,6 +1,6 @@
 {
   "name": "ERP Industrial Multiempresa",
-  "description": "Sistema ERP industrial multiempresa para 5 CNPJs com módulos de Crédito & Risco (Score Interno, Limite por Empresa e Consolidado do Grupo, Adapter MockSerasa, Análise Cadastral e Alçadas), Orçamento Técnico & CPQ, CRM Comercial, Storage de Arquivos e Gestão Multi-tenant.",
+  "description": "Sistema ERP industrial multiempresa com módulos de Pedidos de Venda (conversão de orçamentos sem redigitação, congelamento de versão comercial, validação de crédito e margem, reserva de estoque, necessidades de compra/produção, prazos prometidos e alçadas), Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
