@@ -1,6 +1,6 @@
 {
   "name": "ERP Industrial Multiempresa",
-  "description": "Sistema ERP industrial multiempresa com módulos de Engenharia de Produto & Processos (BOM, roteiros, nesting, CAD/CAM), Planejamento e Controle de Produção (PCP) com motor determinístico MRP (necessidades líquidas, sugestões rastreáveis de compra/produção, gestão de capacidade OEE/turnos/manutenção, sequenciamento de fila e Gantt), Compras & Suprimentos, Estoque Multiempresa, Pedidos de Venda, Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
+  "description": "Sistema ERP industrial multiempresa com módulos de Execução de Produção & Chão de Fábrica (OPs totais e parciais, apontamento em tempo real, fluxo sequencial de operações, paradas de máquina, refugo e retrabalho, controle de custos e encerramento estrito), Engenharia de Produto & Processos (BOM, roteiros, nesting, CAD/CAM), Planejamento e Controle de Produção (PCP) com motor determinístico MRP, Compras & Suprimentos, Estoque Multiempresa, Pedidos de Venda, Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
