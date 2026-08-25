@@ -35,6 +35,9 @@ import {
   Crown,
   Target,
   FolderLock,
+  ShoppingBag,
+  ShoppingCart,
+  Boxes,
 } from 'lucide-react';
 import { EMPRESAS_GRUPO, Empresa } from '../backend/core/types/company';
 import { MODULOS_ERP, ModuloDefinition } from '../backend/modules/registry';
@@ -50,13 +53,16 @@ import { FileManagementViewer } from '../frontend/src/components/FileManagementV
 import { CrmViewer } from '../frontend/src/components/CrmViewer';
 import { OrcamentoViewer } from '../frontend/src/components/OrcamentoViewer';
 import { CreditoViewer } from '../frontend/src/components/CreditoViewer';
+import { PedidoViewer } from '../frontend/src/components/PedidoViewer';
+import { EstoqueViewer } from '../frontend/src/components/EstoqueViewer';
+import { ComprasViewer } from '../frontend/src/components/ComprasViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('overview');
+    'overview' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('compras');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -288,6 +294,39 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('compras')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'compras'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-800 bg-blue-50/80 hover:bg-blue-100'
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Compras & Suprimentos (Módulo 07)
+          </button>
+          <button
+            onClick={() => setActiveTab('estoque')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'estoque'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-800 bg-blue-50/80 hover:bg-blue-100'
+            }`}
+          >
+            <Boxes className="w-4 h-4" />
+            Estoque Multiempresa (Módulo 05)
+          </button>
+          <button
+            onClick={() => setActiveTab('pedidos')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'pedidos'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-800 bg-blue-50/80 hover:bg-blue-100'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            Pedidos de Venda (Módulo 08)
+          </button>
+          <button
             onClick={() => setActiveTab('orcamentos')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'orcamentos'
@@ -435,6 +474,15 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: COMPRAS & GESTÃO DE SUPRIMENTOS */}
+        {activeTab === 'compras' && <ComprasViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: ESTOQUE MULTIEMPRESA & GOVERNANÇA INDUSTRIAL */}
+        {activeTab === 'estoque' && <EstoqueViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: PEDIDOS DE VENDA & GOVERNANÇA INDUSTRIAL */}
+        {activeTab === 'pedidos' && <PedidoViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: ORÇAMENTO TÉCNICO & FORMAÇÃO DE PREÇO CPQ */}
         {activeTab === 'orcamentos' && <OrcamentoViewer empresaAtiva={empresaAtiva} />}
 

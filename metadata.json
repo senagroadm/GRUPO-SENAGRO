@@ -1,6 +1,6 @@
 {
   "name": "ERP Industrial Multiempresa",
-  "description": "Sistema ERP industrial multiempresa com módulos de Pedidos de Venda (conversão de orçamentos sem redigitação, congelamento de versão comercial, validação de crédito e margem, reserva de estoque, necessidades de compra/produção, prazos prometidos e alçadas), Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
+  "description": "Sistema ERP industrial multiempresa com módulos de Compras & Suprimentos (solicitação manual/MRP/estoque mínimo/OP, cotação multi-critério ponderada, pedidos, recebimento físico/fiscal com lotes/certificados e IQF), Estoque Multiempresa (saldos por produto/local/lote, chapas industriais com m² e peso, retalhos e nesting, sucatas em caçambas, ledger com estorno, reservas ativas e inventário com apuração de divergências), Pedidos de Venda, Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

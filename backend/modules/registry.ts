@@ -8,7 +8,7 @@ export interface ModuloDefinition {
   isolamentoEmpresa: 'ESTRITO_TRANSACIONAL' | 'COMPARTILHADO_COM_ESCOPO';
   dependenciasInternas: string[];
   dependenciasExternas: string[];
-  statusIntegracao: 'PRONTO_PARA_IMPLEMENTACAO' | 'AGUARDANDO_DECISAO_ADAPTER';
+  statusIntegracao: 'IMPLEMENTADO' | 'PRONTO_PARA_IMPLEMENTACAO' | 'AGUARDANDO_DECISAO_ADAPTER';
 }
 
 export const MODULOS_ERP: ModuloDefinition[] = [
@@ -130,7 +130,7 @@ export const MODULOS_ERP: ModuloDefinition[] = [
     isolamentoEmpresa: 'ESTRITO_TRANSACIONAL',
     dependenciasInternas: ['PCP', 'ESTOQUE', 'FINANCEIRO'],
     dependenciasExternas: [],
-    statusIntegracao: 'PRONTO_PARA_IMPLEMENTACAO',
+    statusIntegracao: 'IMPLEMENTADO',
   },
   {
     id: 'mod-pcp',

@@ -47,7 +47,12 @@ export function resolveTenantContext(payload: AuthHeaderPayload): RequestTenantC
     }
 
     // Try finding registered user by ID or email
-    const registeredUser = userService.getUserById(rawToken) || userService.getUserByEmail(rawToken);
+    let registeredUser = null;
+    try {
+      registeredUser = userService.getUserById(rawToken);
+    } catch {
+      registeredUser = userService.getUserByEmail(rawToken);
+    }
 
     if (registeredUser) {
       if (!registeredUser.ativo) {
