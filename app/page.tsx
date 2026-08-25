@@ -58,13 +58,14 @@ import { PedidoViewer } from '../frontend/src/components/PedidoViewer';
 import { EstoqueViewer } from '../frontend/src/components/EstoqueViewer';
 import { ComprasViewer } from '../frontend/src/components/ComprasViewer';
 import { EngenhariaViewer } from '../frontend/src/components/EngenhariaViewer';
+import { PcpViewer } from '../frontend/src/components/PcpViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'engenharia' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('engenharia');
+    'overview' | 'pcp' | 'engenharia' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('pcp');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -296,6 +297,17 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('pcp')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'pcp'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-800 bg-blue-50/80 hover:bg-blue-100'
+            }`}
+          >
+            <Factory className="w-4 h-4" />
+            PCP & MRP Inicial (Módulo 09)
+          </button>
+          <button
             onClick={() => setActiveTab('engenharia')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'engenharia'
@@ -487,6 +499,9 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: PCP & MRP INICIAL DETERMINÍSTICO */}
+        {activeTab === 'pcp' && <PcpViewer empresaId={empresaAtiva.id} />}
+
         {/* TAB: ENGENHARIA DE PRODUTO, BOM & ROTEIROS */}
         {activeTab === 'engenharia' && <EngenhariaViewer empresaAtiva={empresaAtiva} />}
 
