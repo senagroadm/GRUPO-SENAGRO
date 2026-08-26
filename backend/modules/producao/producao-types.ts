@@ -62,6 +62,246 @@ export type MotivoRetrabalhoCategoria =
   | 'OUTROS';
 
 /**
+ * =========================================================================
+ * EXTENSÕES ESPECÍFICAS DE PROCESSOS INDUSTRIAIS (CORTE, DOBRA, SOLDA, ETC)
+ * =========================================================================
+ */
+
+export type TipoProcessoCorte = 'LASER_FIBRA' | 'LASER_CO2' | 'PLASMA_HD' | 'OXICORTE' | 'GUILHOTINA' | 'SERRA_FITA' | 'SERRA_FITA_MECANICA' | 'OUTROS';
+export type TipoGasCorte = 'OXIGENIO_O2' | 'NITROGENIO_N2' | 'NITROGENIO_N2_ALTA_PRESSAO' | 'AR_COMPRIMIDO' | 'ARGONIO' | 'ARGONIO_PURO' | 'ARGONIO_PURO_100' | 'MISTURA_SPECIAL' | 'MISTURA_AR_CO2_20' | 'CO2_PURO' | 'AR_HE_CO2' | 'SEM_GAS';
+export type TipoSucata = 'ESQUELETO_LASER' | 'PONTAS_PERFIL' | 'PONTAS_DE_BARRA' | 'CAVACO_USINAGEM' | 'BORRA_PLASMA' | 'RETALHO_CONDENADO' | 'SUCATA_INOX_LIMPA' | 'SUCATA_MISTA';
+
+/**
+ * Extensão Técnica Específica de CORTE (Laser, Plasma, Oxicorte, etc.)
+ */
+export interface ExtensaoCorteLaser {
+  tipoProcessoCorte: TipoProcessoCorte;
+  material: string; // Ex: 'Aço SAC-350 / Domex 700', 'Inox AISI 304', 'SAE 1020'
+  espessuraMm: number; // Ex: 6.35 mm
+  
+  // Chapa bruta e dimensões
+  chapaDescricao: string; // Ex: 'Chapa Aço SAC-350 #6.35 x 1500 x 6000 mm'
+  formatoChapaLarguraMm?: number;
+  formatoChapaComprimentoMm?: number;
+  formatoChapaAreaM2?: number;
+  loteChapa?: string;
+  chapaOrigemEstoqueId?: string;
+  
+  // Programa CNC / Nesting
+  programaCncCodigo?: string; // Ex: 'PRG-CHAS-6MM-V02.cnc'
+  programaCncVersao?: string;
+  nestingAproveitamentoPercentual?: number; // Ex: 88.5%
+  quantidadePecasPorChapa?: number;
+  totalChapasNecessarias?: number;
+  totalChapasConsumidasReal?: number;
+  
+  // Tempos de Processamento
+  tempoPrevistoMinutosTotal?: number;
+  tempoPrevistoMinutosPorPeca?: number;
+  tempoRealMinutosTotal?: number;
+  tempoRealMinutosPorPeca?: number;
+  tempoSetupMinutosPrevisto?: number;
+  tempoSetupMinutosReal?: number;
+  descricaoSetup?: string;
+  
+  // Quantidades
+  quantidadePecasPlanejada: number;
+  quantidadePecasCortadasBoas: number;
+  quantidadePecasRefugadas: number;
+  
+  // Peso e Balanço de Massa
+  pesoLiquidoPecaUnitariaKg: number;
+  pesoLiquidoTotalPecasKg: number;
+  pesoBrutoChapaUnitariaKg?: number;
+  pesoBrutoTotalChapasKg?: number;
+  
+  // Retalho Reutilizável Gerado
+  temRetalhoAproveitavel: boolean;
+  retalhoDescricao?: string;
+  retalhoDimensoes?: string;
+  retalhoPesoKg?: number;
+  retalhoCodigoEstoque?: string;
+  retalhoValorizadoCredito?: number;
+  
+  // Sucata / Esqueleto Irrecuperável
+  pesoSucataTotalKg: number;
+  tipoSucata: TipoSucata;
+  custoSucataPerdida?: number;
+  
+  // Gás de Assistência & Consumíveis
+  gasTipo?: TipoGasCorte;
+  gasPressaoBar?: number;
+  gasConsumoEstimadoM3?: number;
+  gasConsumoRealM3?: number;
+  bicoNozzleModelo?: string;
+  lenteFocalOuVidroProtecao?: string;
+  custoGasConsumiveisTotal?: number;
+}
+
+/**
+ * Extensão Técnica Específica de DOBRA (Prensa Dobradeira CNC / Manual)
+ */
+export interface PassoDobraSequencia {
+  passoNumero: number;
+  descricaoDobra: string;
+  anguloNominalGraus: number;
+  anguloMedidoRealGraus?: number;
+  comprimentoDobraMm: number;
+  forcaDobraToneladas?: number;
+  puncaoCodigo: string;
+  matrizCodigo: string;
+  aberturaMatrizV_Mm: number;
+  compensacaoSpringbackGraus?: number;
+  statusPasso: 'CONCLUIDO' | 'EM_AJUSTE' | 'PENDENTE';
+}
+
+export interface ExtensaoDobraCNC {
+  maquinaNome: string;
+  maquinaCodigo?: string;
+  ferramentaConjunto: string;
+  puncaoModelo: string;
+  matrizModelo: string;
+  aberturaMatrizV_Mm: number;
+  raioInternoDobraMm: number;
+  espessuraMaterialMm: number;
+  materialDescricao: string;
+  
+  // Ângulos e Parâmetros
+  angulosDescricao: string;
+  compensacaoSpringback: number;
+  sequenciaPassosDobra: PassoDobraSequencia[];
+  totalDobrasPorPeca: number;
+  
+  // Tempos
+  tempoSetupPrevistoMinutos?: number;
+  tempoSetupRealMinutos?: number;
+  tempoDobraPrevistoPorPecaMinutos?: number;
+  tempoDobraRealPorPecaMinutos?: number;
+  tempoTotalPrevistoMinutos?: number;
+  tempoTotalRealMinutos?: number;
+  
+  // Quantidades
+  quantidadePlanejada: number;
+  quantidadeDobradaBoas: number;
+  quantidadeRefugoDobra: number;
+  quantidadeRetrabalhoDobra: number;
+  
+  // Retrabalho específico de dobra
+  houveRetrabalhoDobra: boolean;
+  motivoRetrabalhoDobra?: 'SPRINGBACK_INCORRETO' | 'ANGULO_FORA_TOLERANCIA' | 'MARCA_EXCESSIVA_FERRAMENTAL' | 'INVERSAO_DOBRA' | 'REDOBRA_AJUSTE';
+  descricaoRetrabalhoDobra?: string;
+  acaoCorretivaDobra?: string;
+  custoRetrabalhoDobra?: number;
+}
+
+/**
+ * Extensões Preparadas para Outros Processos de Chão de Fábrica
+ */
+export interface ExtensaoSoldaCaldeiraria {
+  processo: 'MIG_MAG_GMAW' | 'TIG_GTAW' | 'ARAME_TUBULAR_FCAW' | 'ELETRODO_SMAW' | 'LASER' | 'ARCO_SUBMERSO_SAW' | string;
+  gasProtecao: TipoGasCorte | 'MISTURA_AR_CO2_20' | 'ARGONIO_PURO' | 'ARGONIO_PURO_100' | 'CO2_PURO' | 'AR_HE_CO2' | 'SEM_GAS';
+  gasConsumoLitrosMinuto?: number;
+  consumivelArameCodigo: string;
+  consumivelArameLote?: string;
+  consumoArameEstimadoKg?: number;
+  consumoArameRealKg?: number;
+  procedimentoEPS_WPS: string;
+  qualificacaoSoldadorNorma?: string;
+  tipoJunta?: 'TOPO_COM_CHANFRO_V' | 'ANGULO_T' | 'SOBREPOSTA' | 'CANTO' | 'VIROLA' | string;
+  inspecaoEnsaioNaoDestrutivo?: 'VISUAL_100%' | 'LIQUIDO_PENETRANTE_LP' | 'PARTICULA_MAGNETICA_PM' | 'ULTRASSOM_US' | 'RADIOGRAFIA_RX' | 'RADIOGRAFIA_RX_TOTAL' | string;
+  laudoInspecaoNumero?: string;
+  aprovadoQualidadeSolda: boolean;
+  custoConsumiveisSolda?: number;
+}
+
+export interface ExtensaoPinturaAcabamento {
+  tipoPintura: 'ELETROSTATICA_PO' | 'LIQUIDA_EPOXI' | 'LIQUIDA_POLIURETANO_PU' | 'PRIMER_ANTICORROSIVO_ZINCO' | string;
+  corRAL: string;
+  corDescricao: string;
+  tintaCodigo: string;
+  tintaLote?: string;
+  espessuraCamadaMicronsPrevista: number;
+  espessuraCamadaMicronsReal?: number;
+  temperaturaEstufaC?: number;
+  tempoEstufaMinutos?: number;
+  areaTotalPinturaM2?: number;
+  preTratamentoSuperficie?: 'DESENGRAXE_E_FOSFATIZACAO' | 'JATEAMENTO_GRANALHA_SA2_5' | 'NANOTECNOLOGIA_ZIRCONIO' | string;
+  consumoTintaEstimadoKgOuLitros?: number;
+  consumoTintaRealKgOuLitros?: number;
+  custoInsumosPintura?: number;
+}
+
+export interface ExtensaoMontagem {
+  tipoMontagem: 'MECANICA_ESTRUTURAL' | 'MECANICA_PARAFUSADA' | 'ELETROMECANICA' | 'HIDRAULICA_PNEUMATICA' | 'CONJUNTO_APARAFUSADO' | string;
+  instrucaoMontagemNumero?: string;
+  elementosFixacaoList?: {
+    itemCodigo: string;
+    itemDescricao: string;
+    quantidade: number;
+    unidade: string;
+    torqueExigidoNm?: number;
+  }[];
+  torquimetroCalibradoCodigo?: string;
+  ferramentaTorquimetroUtilizada?: string;
+  torqueEspecificadoNm?: number;
+  torquesEspecificadosNm?: string;
+  quantidadeComponentesMontadosPorPeca?: number;
+  gabaritoMontagemCodigo?: string;
+  testeFuncionalDescricao?: string;
+  testeFuncionalAprovado?: boolean;
+  inspecaoAprovada?: boolean;
+  custoComponentesMontagem?: number;
+}
+
+export interface ExtensaoAcabamento {
+  tipoAcabamento: 'JATEAMENTO_GRANALHA_ACO' | 'LIXAMENTO_MANUAL' | 'LIXAMENTO_CINTA' | 'POLIMENTO_ESPELHADO_SANITARIO' | 'POLIMENTO_SANITARIO_ESPELHADO' | 'ESCOVAMENTO' | 'ESCOVADO' | 'REBARBACAO_TAMBOR' | string;
+  grauRugosidadeRaMicrons?: number;
+  rugosidadeMaximaRa_Microns?: number;
+  rugosidadeMedidaRealRa?: number;
+  granulometriaLixa?: string;
+  abrasivosUtilizados?: string;
+  insumosAbrasivosUtilizados?: string;
+  tempoExecucaoMinutos?: number;
+  custoAbrasivosInsumos?: number;
+  custoInsumosAcabamento?: number;
+  aprovadoInspecaoVisual?: boolean;
+}
+
+export interface ExtensaoServicoExterno {
+  tipoServico: 'GALVANIZACAO_A_FOGO' | 'ZINCAGEM_TRIVALENTE' | 'TEMPERA_INDUCAO' | 'NITRETACAO' | 'USINAGEM_TERCEIRIZADA' | 'CORTE_PESADO_TERCEIRO' | string;
+  fornecedorNome: string;
+  fornecedorCnpj?: string;
+  pedidoCompraNumero?: string;
+  pedidoCompraServicoNumero?: string;
+  notaFiscalRemessa?: string;
+  notaFiscalRemessaNumero?: string;
+  notaRemessaIndustrializacaoNumero?: string;
+  notaFiscalRetorno?: string;
+  notaFiscalRetornoNumero?: string;
+  notaRetornoIndustrializacaoNumero?: string;
+  dataEnvioRemessa?: string;
+  dataEnvio?: string;
+  dataRetornoPrevista?: string;
+  prazoRetornoPrevisto?: string;
+  dataRetornoReal?: string;
+  quantidadeEnviada: number;
+  quantidadeRetornada: number;
+  quantidadeAprovada?: number;
+  quantidadeRetornadaAprovada?: number;
+  quantidadeRejeitada?: number;
+  unidadeMedida?: string;
+  laudoCertificadoFornecedor?: string;
+  certificadoConformidadeFornecedor?: string;
+  certificadoTratamentoNumero?: string;
+  espessuraCamadaMicronsMedida?: number;
+  custoUnitarioServico?: number;
+  custoTotalServicoExterno: number;
+  custoTotalServico?: number;
+  statusServico?: string;
+  inspecaoAprovada?: boolean;
+}
+
+/**
  * Entidade: op_materiais
  * Controle dos materiais alocados para a OP com previsão da BOM e consumo real apontado
  */
@@ -94,7 +334,7 @@ export interface OpOperacao {
   opId: string;
   sequencia: number; // 10, 20, 30, 40...
   nomeOperacao: string;
-  setor: string; // 'CORTE_LASER' | 'DOBRA_CNC' | 'CALDEIRARIA_SOLDA' | 'USINAGEM' | 'PINTURA' | 'MONTAGEM' | 'INSPECAO'
+  setor: string; // 'CORTE_LASER' | 'DOBRA_CNC' | 'CALDEIRARIA_SOLDA' | 'USINAGEM' | 'PINTURA' | 'MONTAGEM' | 'INSPECAO' | 'SERVICO_EXTERNO'
   maquinaId: string;
   maquinaNome: string;
   ferramenta?: string;
@@ -119,10 +359,21 @@ export interface OpOperacao {
   tempoParadasMinutos: number;
   tempoTotalRealMinutos: number;
   
-  // Custos acumulados na operação:
+  // Custos acumulados na operação (parametrização vs real):
   custoMaoDeObraReal: number;
   custoMaquinaReal: number;
+  custoConsumiveisReal?: number;
+  custoServicosExternos?: number;
   custoTotalOperacaoReal: number;
+  
+  // Detalhamento e Extensões Técnicas Específicas:
+  extensaoCorte?: ExtensaoCorteLaser;
+  extensaoDobra?: ExtensaoDobraCNC;
+  extensaoSolda?: ExtensaoSoldaCaldeiraria;
+  extensaoPintura?: ExtensaoPinturaAcabamento;
+  extensaoMontagem?: ExtensaoMontagem;
+  extensaoAcabamento?: ExtensaoAcabamento;
+  extensaoServicoExterno?: ExtensaoServicoExterno;
   
   status: StatusOperacaoOP;
   exigeInspecaoQualidade: boolean;
@@ -147,8 +398,10 @@ export interface ApontamentoProducao {
   duracaoMinutos: number;
   operadorId: string;
   operadorNome: string;
+  operadorCustoHoraParametrizado?: number;
   maquinaId: string;
   maquinaNome: string;
+  maquinaCustoHoraParametrizado?: number;
   quantidadeBoas: number;
   quantidadeRefugo: number;
   quantidadeRetrabalho: number;
@@ -162,10 +415,24 @@ export interface ApontamentoProducao {
     custoTotal: number;
     lote?: string;
   }[];
+  
+  // Custos calculados com custo-hora parametrizado e tempos reais:
   custoMaoDeObraCalculado: number;
   custoMaquinaCalculado: number;
   custoMateriaisCalculado: number;
+  custoConsumiveisCalculado?: number;
+  custoServicosExternos?: number;
   custoTotalApontamento: number;
+  
+  // Detalhes técnicos apontados específicos do processo:
+  detalhesCorte?: Partial<ExtensaoCorteLaser>;
+  detalhesDobra?: Partial<ExtensaoDobraCNC>;
+  detalhesSolda?: Partial<ExtensaoSoldaCaldeiraria>;
+  detalhesPintura?: Partial<ExtensaoPinturaAcabamento>;
+  detalhesMontagem?: Partial<ExtensaoMontagem>;
+  detalhesAcabamento?: Partial<ExtensaoAcabamento>;
+  detalhesServicoExterno?: Partial<ExtensaoServicoExterno>;
+
   observacoes?: string;
   empresaId: string;
   criadoEm: string;
@@ -329,12 +596,16 @@ export interface OrdemProducaoCompleta {
     materiais: number;
     maoDeObra: number;
     maquina: number;
+    consumiveis?: number;
+    servicosExternos?: number;
     total: number;
   };
   custoReal: {
     materiais: number;
     maoDeObra: number;
     maquina: number;
+    consumiveis?: number;
+    servicosExternos?: number;
     retrabalhos: number;
     perdasRefugos: number;
     total: number;

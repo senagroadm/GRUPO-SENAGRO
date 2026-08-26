@@ -23,6 +23,15 @@ export async function POST(req: NextRequest) {
       motivoRetrabalho,
       descricaoRetrabalho,
       materiaisConsumidos,
+      custoConsumiveis,
+      custoServicosExternos,
+      detalhesCorte,
+      detalhesDobra,
+      detalhesSolda,
+      detalhesPintura,
+      detalhesMontagem,
+      detalhesAcabamento,
+      detalhesServicoExterno,
       observacoes,
     } = body;
 
@@ -48,6 +57,15 @@ export async function POST(req: NextRequest) {
       motivoRetrabalho,
       descricaoRetrabalho,
       materiaisConsumidos: materiaisConsumidos || [],
+      custoConsumiveis: Number(custoConsumiveis || 0),
+      custoServicosExternos: Number(custoServicosExternos || 0),
+      detalhesCorte,
+      detalhesDobra,
+      detalhesSolda,
+      detalhesPintura,
+      detalhesMontagem,
+      detalhesAcabamento,
+      detalhesServicoExterno,
       observacoes,
     });
 

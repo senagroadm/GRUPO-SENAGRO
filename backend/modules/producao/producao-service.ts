@@ -16,6 +16,13 @@ import {
   MotivoParadaCategoria,
   MotivoRefugoCategoria,
   MotivoRetrabalhoCategoria,
+  ExtensaoCorteLaser,
+  ExtensaoDobraCNC,
+  ExtensaoSoldaCaldeiraria,
+  ExtensaoPinturaAcabamento,
+  ExtensaoMontagem,
+  ExtensaoAcabamento,
+  ExtensaoServicoExterno,
 } from './producao-types';
 
 class ProducaoService {
@@ -272,10 +279,57 @@ class ProducaoService {
           tempoTotalRealMinutos: 265,
           custoMaoDeObraReal: 187.7,
           custoMaquinaReal: 817.0,
-          custoTotalOperacaoReal: 1004.7,
+          custoConsumiveisReal: 87.84,
+          custoTotalOperacaoReal: 1092.54,
           status: 'EM_PRODUCAO',
           exigeInspecaoQualidade: true,
           dataInicioReal: '2026-08-12 08:00:00',
+          extensaoCorte: {
+            tipoProcessoCorte: 'LASER_FIBRA',
+            material: 'Aço SAC-350 / Domex 700 Alta Resistência',
+            espessuraMm: 6.35,
+            chapaDescricao: 'Chapa Aço SAC-350 #6.35mm x 1500 x 6000mm',
+            formatoChapaLarguraMm: 1500,
+            formatoChapaComprimentoMm: 6000,
+            formatoChapaAreaM2: 9.0,
+            loteChapa: 'LOT-SAC350-USIMINAS-8812',
+            programaCncCodigo: 'PRG-CHAS-LONG-6MM-V02.cnc',
+            programaCncVersao: 'Rev 02',
+            nestingAproveitamentoPercentual: 89.4,
+            quantidadePecasPorChapa: 1,
+            totalChapasNecessarias: 10,
+            totalChapasConsumidasReal: 14,
+            tempoPrevistoMinutosTotal: 395,
+            tempoPrevistoMinutosPorPeca: 35,
+            tempoRealMinutosTotal: 250,
+            tempoRealMinutosPorPeca: 35,
+            tempoSetupMinutosPrevisto: 45,
+            tempoSetupMinutosReal: 40,
+            descricaoSetup: 'Troca de bico duplo Ø 2.0 mm, centragem do feixe ótico e limpeza da mesa de apoio',
+            quantidadePecasPlanejada: 10,
+            quantidadePecasCortadasBoas: 6,
+            quantidadePecasRefugadas: 0,
+            pesoLiquidoPecaUnitariaKg: 382.4,
+            pesoLiquidoTotalPecasKg: 2294.4,
+            pesoBrutoChapaUnitariaKg: 448.5,
+            pesoBrutoTotalChapasKg: 6279.0,
+            temRetalhoAproveitavel: true,
+            retalhoDescricao: 'Retalho útil aproveitável 1100 x 4800 mm (#6.35mm)',
+            retalhoDimensoes: '1100 x 4800 mm',
+            retalhoPesoKg: 263.1,
+            retalhoCodigoEstoque: 'RET-SAC350-6MM-001',
+            retalhoValorizadoCredito: 1447.05,
+            pesoSucataTotalKg: 672.4,
+            tipoSucata: 'ESQUELETO_LASER',
+            custoSucataPerdida: 369.82,
+            gasTipo: 'OXIGENIO_O2',
+            gasPressaoBar: 0.8,
+            gasConsumoEstimadoM3: 18.5,
+            gasConsumoRealM3: 12.2,
+            bicoNozzleModelo: 'Duplo cromado Ø 2.0 mm',
+            lenteFocalOuVidroProtecao: 'Vidro Óptico TruLaser 3030',
+            custoGasConsumiveisTotal: 87.84,
+          },
         },
         {
           id: 'op-oper-02',
@@ -307,6 +361,38 @@ class ProducaoService {
           custoTotalOperacaoReal: 0,
           status: 'PRONTA_PARA_INICIO',
           exigeInspecaoQualidade: true,
+          extensaoDobra: {
+            maquinaNome: 'Prensa Dobradeira CNC 220t Bystronic Xpert Pro',
+            maquinaCodigo: 'DOBRA-01',
+            ferramentaConjunto: 'Conjunto Punção Reto Pesado + Matriz Multi-V V80',
+            puncaoModelo: 'Punção Reto R=3.0mm 86° Mod. P-102 Pesado',
+            matrizModelo: 'Matriz V=80mm 85° Mod. M-204 com insertos temperados',
+            aberturaMatrizV_Mm: 80,
+            raioInternoDobraMm: 6.5,
+            espessuraMaterialMm: 6.35,
+            materialDescricao: 'Aço SAC-350 / Domex 700',
+            angulosDescricao: '90° nas abas superiores (passo 1/2) e 90° nas abas inferiores (passo 3/4)',
+            compensacaoSpringback: 1.8,
+            totalDobrasPorPeca: 4,
+            sequenciaPassosDobra: [
+              { passoNumero: 1, descricaoDobra: 'Dobra Aba Superior Esquerda 90°', anguloNominalGraus: 90, anguloMedidoRealGraus: 90.1, comprimentoDobraMm: 5800, forcaDobraToneladas: 185, puncaoCodigo: 'P-102-R3', matrizCodigo: 'M-204-V80', aberturaMatrizV_Mm: 80, compensacaoSpringbackGraus: 1.8, statusPasso: 'PENDENTE' },
+              { passoNumero: 2, descricaoDobra: 'Dobra Aba Superior Direita 90°', anguloNominalGraus: 90, anguloMedidoRealGraus: 89.9, comprimentoDobraMm: 5800, forcaDobraToneladas: 185, puncaoCodigo: 'P-102-R3', matrizCodigo: 'M-204-V80', aberturaMatrizV_Mm: 80, compensacaoSpringbackGraus: 1.8, statusPasso: 'PENDENTE' },
+              { passoNumero: 3, descricaoDobra: 'Dobra Aba Inferior Esquerda 90°', anguloNominalGraus: 90, anguloMedidoRealGraus: 90.0, comprimentoDobraMm: 5800, forcaDobraToneladas: 185, puncaoCodigo: 'P-102-R3', matrizCodigo: 'M-204-V80', aberturaMatrizV_Mm: 80, compensacaoSpringbackGraus: 1.8, statusPasso: 'PENDENTE' },
+              { passoNumero: 4, descricaoDobra: 'Dobra Aba Inferior Direita 90°', anguloNominalGraus: 90, anguloMedidoRealGraus: 90.0, comprimentoDobraMm: 5800, forcaDobraToneladas: 185, puncaoCodigo: 'P-102-R3', matrizCodigo: 'M-204-V80', aberturaMatrizV_Mm: 80, compensacaoSpringbackGraus: 1.8, statusPasso: 'PENDENTE' },
+            ],
+            tempoSetupPrevistoMinutos: 60,
+            tempoSetupRealMinutos: 0,
+            tempoDobraPrevistoPorPecaMinutos: 40,
+            tempoDobraRealPorPecaMinutos: 0,
+            tempoTotalPrevistoMinutos: 460,
+            tempoTotalRealMinutos: 0,
+            quantidadePlanejada: 10,
+            quantidadeDobradaBoas: 0,
+            quantidadeRefugoDobra: 0,
+            quantidadeRetrabalhoDobra: 0,
+            houveRetrabalhoDobra: false,
+            custoRetrabalhoDobra: 0,
+          },
         },
         {
           id: 'op-oper-03',
@@ -337,6 +423,21 @@ class ProducaoService {
           custoTotalOperacaoReal: 0,
           status: 'AGUARDANDO_ANTERIOR',
           exigeInspecaoQualidade: true,
+          extensaoSolda: {
+            processo: 'MIG_MAG_GMAW',
+            gasProtecao: 'MISTURA_AR_CO2_20',
+            gasConsumoLitrosMinuto: 16,
+            consumivelArameCodigo: 'AWS ER70S-6 Ø 1.2mm',
+            consumivelArameLote: 'LOT-BELGO-ER70S6-4401',
+            consumoArameEstimadoKg: 45.0,
+            consumoArameRealKg: 0,
+            procedimentoEPS_WPS: 'EPS-CHAS-SAC350-MIG-01',
+            qualificacaoSoldadorNorma: 'ASME Sec IX / AWS D1.1',
+            tipoJunta: 'TOPO_COM_CHANFRO_V',
+            inspecaoEnsaioNaoDestrutivo: 'LIQUIDO_PENETRANTE_LP',
+            aprovadoQualidadeSolda: true,
+            custoConsumiveisSolda: 480.0,
+          },
         },
         {
           id: 'op-oper-04',
@@ -367,6 +468,20 @@ class ProducaoService {
           custoTotalOperacaoReal: 0,
           status: 'AGUARDANDO_ANTERIOR',
           exigeInspecaoQualidade: true,
+          extensaoPintura: {
+            tipoPintura: 'ELETROSTATICA_PO',
+            corRAL: 'RAL 7016 - Cinza Antracite',
+            corDescricao: 'Cinza Antracite Texturizado Alta Durabilidade Industrial',
+            tintaCodigo: 'PO-EPOXI-RAL7016',
+            espessuraCamadaMicronsPrevista: 100,
+            temperaturaEstufaC: 200,
+            tempoEstufaMinutos: 25,
+            areaTotalPinturaM2: 145.0,
+            preTratamentoSuperficie: 'DESENGRAXE_E_FOSFATIZACAO',
+            consumoTintaEstimadoKgOuLitros: 32.0,
+            consumoTintaRealKgOuLitros: 0,
+            custoInsumosPintura: 860.0,
+          },
         },
       ],
       criadoPor: 'Eng. Roberto Vasconcelos',
@@ -471,9 +586,56 @@ class ProducaoService {
           tempoTotalRealMinutos: 465,
           custoMaoDeObraReal: 329.0,
           custoMaquinaReal: 1433.0,
-          custoTotalOperacaoReal: 1762.0,
+          custoConsumiveisReal: 215.4,
+          custoTotalOperacaoReal: 1977.4,
           status: 'CONCLUIDA',
           exigeInspecaoQualidade: true,
+          extensaoCorte: {
+            tipoProcessoCorte: 'LASER_FIBRA',
+            material: 'Aço Inoxidável Austenítico AISI 316L',
+            espessuraMm: 4.75,
+            chapaDescricao: 'Chapa Aço Inox AISI 316L #4.75mm x 1500 x 3000mm',
+            formatoChapaLarguraMm: 1500,
+            formatoChapaComprimentoMm: 3000,
+            formatoChapaAreaM2: 4.5,
+            loteChapa: 'LOT-INOX-APERAM-9901',
+            programaCncCodigo: 'PRG-SILO-VIROLA-INOX-R01.cnc',
+            programaCncVersao: 'Rev 01',
+            nestingAproveitamentoPercentual: 86.8,
+            quantidadePecasPorChapa: 1,
+            totalChapasNecessarias: 17,
+            totalChapasConsumidasReal: 18,
+            tempoPrevistoMinutosTotal: 420,
+            tempoPrevistoMinutosPorPeca: 90,
+            tempoRealMinutosTotal: 445,
+            tempoRealMinutosPorPeca: 111.2,
+            tempoSetupMinutosPrevisto: 60,
+            tempoSetupMinutosReal: 65,
+            descricaoSetup: 'Instalação de bico especial alta pressão N2 Ø 2.5 mm, purga da linha de nitrogênio líquido',
+            quantidadePecasPlanejada: 4,
+            quantidadePecasCortadasBoas: 3,
+            quantidadePecasRefugadas: 1,
+            pesoLiquidoPecaUnitariaKg: 167.8,
+            pesoLiquidoTotalPecasKg: 503.4,
+            pesoBrutoChapaUnitariaKg: 171.0,
+            pesoBrutoTotalChapasKg: 3078.0,
+            temRetalhoAproveitavel: true,
+            retalhoDescricao: 'Retalhos Inox 316L 450x3000mm para fabricação de anéis de reforço',
+            retalhoDimensoes: '450 x 3000 mm',
+            retalhoPesoKg: 51.3,
+            retalhoCodigoEstoque: 'RET-INOX316L-4.75-01',
+            retalhoValorizadoCredito: 1231.2,
+            pesoSucataTotalKg: 185.0,
+            tipoSucata: 'SUCATA_INOX_LIMPA',
+            custoSucataPerdida: 444.0,
+            gasTipo: 'NITROGENIO_N2_ALTA_PRESSAO',
+            gasPressaoBar: 18.0,
+            gasConsumoEstimadoM3: 65.0,
+            gasConsumoRealM3: 78.5,
+            bicoNozzleModelo: 'Bico Laser Cônico Ø 2.5 mm',
+            lenteFocalOuVidroProtecao: 'Lente Foco 7.5 pol / Vidro Protetor High-Power',
+            custoGasConsumiveisTotal: 215.4,
+          },
         },
         {
           id: 'op-oper-202',
@@ -501,16 +663,32 @@ class ProducaoService {
           tempoTotalRealMinutos: 675,
           custoMaoDeObraReal: 585.0,
           custoMaquinaReal: 1406.0,
-          custoTotalOperacaoReal: 1991.0,
+          custoConsumiveisReal: 340.0,
+          custoTotalOperacaoReal: 2331.0,
           status: 'EM_PRODUCAO',
           exigeInspecaoQualidade: true,
+          extensaoSolda: {
+            processo: 'TIG_GTAW',
+            gasProtecao: 'ARGONIO_PURO_100',
+            gasConsumoLitrosMinuto: 14,
+            consumivelArameCodigo: 'Vareta TIG AWS ER316L Ø 2.4mm',
+            consumivelArameLote: 'LOT-OXIGEN-316L-998',
+            consumoArameEstimadoKg: 18.0,
+            consumoArameRealKg: 21.5,
+            procedimentoEPS_WPS: 'EPS-SILO-INOX316L-TIG-02',
+            qualificacaoSoldadorNorma: 'ASME Boiler and Pressure Vessel Code Sec VIII Div 1',
+            tipoJunta: 'TOPO_COM_CHANFRO_V',
+            inspecaoEnsaioNaoDestrutivo: 'RADIOGRAFIA_RX_TOTAL',
+            aprovadoQualidadeSolda: false,
+            custoConsumiveisSolda: 340.0,
+          },
         },
         {
           id: 'op-oper-203',
           opId: 'op-2026-002',
           sequencia: 30,
-          nomeOperacao: 'Polimento Sanitário Interno e Teste de Estanqueidade',
-          setor: 'INSPECAO',
+          nomeOperacao: 'Polimento Sanitário Interno Ra 0.4µm e Teste Hidrostático',
+          setor: 'ACABAMENTO',
           maquinaId: 'maq-montagem-01',
           maquinaNome: 'Bancada e Linha de Montagem Mecânica',
           tempoSetupPadraoMinutos: 60,
@@ -530,9 +708,19 @@ class ProducaoService {
           tempoTotalRealMinutos: 395,
           custoMaoDeObraReal: 381.8,
           custoMaquinaReal: 625.4,
-          custoTotalOperacaoReal: 1007.2,
+          custoConsumiveisReal: 180.0,
+          custoTotalOperacaoReal: 1187.2,
           status: 'CONCLUIDA_PARCIAL',
           exigeInspecaoQualidade: true,
+          extensaoAcabamento: {
+            tipoAcabamento: 'POLIMENTO_SANITARIO_ESPELHADO',
+            granulometriaLixa: 'Sequência Grão 120 -> 240 -> 320 -> 400 -> Feltro com Pasta Diamantada',
+            rugosidadeMaximaRa_Microns: 0.4,
+            rugosidadeMedidaRealRa: 0.35,
+            insumosAbrasivosUtilizados: 'Discos flap zirconados 3M, rodas scotch-brite e pasta de polimento branca',
+            custoInsumosAcabamento: 180.0,
+            aprovadoInspecaoVisual: true,
+          },
         },
       ],
       criadoPor: 'Eng. Roberto Vasconcelos',
@@ -620,7 +808,7 @@ class ProducaoService {
           nomeOperacao: 'Corte e Furação em Serra de Fita e Furadeira Radial',
           setor: 'CORTE_LASER',
           maquinaId: 'maq-laser-01',
-          maquinaNome: 'Corte e Furação',
+          maquinaNome: 'Corte e Furação Mecânica',
           tempoSetupPadraoMinutos: 30,
           tempoCicloPadraoMinutos: 5,
           tempoTotalPadraoMinutos: 280,
@@ -641,15 +829,85 @@ class ProducaoService {
           custoTotalOperacaoReal: 675.0,
           status: 'CONCLUIDA',
           exigeInspecaoQualidade: false,
+          extensaoCorte: {
+            tipoProcessoCorte: 'SERRA_FITA_MECANICA',
+            material: 'Perfil U Dobrado 100x50x3.0mm Aço SAE 1020',
+            espessuraMm: 3.0,
+            chapaDescricao: 'Barra Perfil U 100x50 #3.0mm x 6000mm',
+            formatoChapaLarguraMm: 100,
+            formatoChapaComprimentoMm: 6000,
+            totalChapasNecessarias: 26,
+            totalChapasConsumidasReal: 26,
+            tempoPrevistoMinutosTotal: 280,
+            tempoRealMinutosTotal: 270,
+            quantidadePecasPlanejada: 50,
+            quantidadePecasCortadasBoas: 50,
+            quantidadePecasRefugadas: 0,
+            pesoLiquidoPecaUnitariaKg: 14.2,
+            pesoLiquidoTotalPecasKg: 710.0,
+            temRetalhoAproveitavel: false,
+            pesoSucataTotalKg: 28.5,
+            tipoSucata: 'PONTAS_DE_BARRA',
+            custoSucataPerdida: 45.0,
+          },
         },
         {
           id: 'op-oper-302',
           opId: 'op-2026-003',
           sequencia: 20,
-          nomeOperacao: 'Galvanização a Fogo e Montagem dos Grampos',
+          nomeOperacao: 'Galvanização a Fogo por Imersão a Quente (Serviço Externo)',
+          setor: 'SERVICOS_EXTERNOS',
+          maquinaId: 'maq-montagem-01',
+          maquinaNome: 'Terceirização Externa',
+          tempoSetupPadraoMinutos: 0,
+          tempoCicloPadraoMinutos: 0,
+          tempoTotalPadraoMinutos: 0,
+          custoHoraMaquina: 0,
+          custoHoraMaoDeObra: 0,
+          custoServicosExternos: 1850.0,
+          quantidadeTotalPrevista: 50,
+          quantidadeDisponivelEntrada: 50,
+          quantidadeProduzidaBoas: 50,
+          quantidadeRefugada: 0,
+          quantidadeEmRetrabalho: 0,
+          saldoOperacaoRestante: 0,
+          tempoSetupRealMinutos: 0,
+          tempoExecucaoRealMinutos: 0,
+          tempoParadasMinutos: 0,
+          tempoTotalRealMinutos: 0,
+          custoMaoDeObraReal: 0,
+          custoMaquinaReal: 0,
+          custoTotalOperacaoReal: 1850.0,
+          status: 'CONCLUIDA',
+          exigeInspecaoQualidade: true,
+          extensaoServicoExterno: {
+            tipoServico: 'GALVANIZACAO_A_FOGO',
+            fornecedorNome: 'GalvanoTech Revestimentos Industriais S/A',
+            fornecedorCnpj: '14.882.109/0001-32',
+            pedidoCompraNumero: 'PC-2026-0922',
+            dataEnvioRemessa: '2026-08-08',
+            dataRetornoPrevista: '2026-08-12',
+            dataRetornoReal: '2026-08-12',
+            notaFiscalRemessa: 'NF-e 045.112',
+            notaFiscalRetorno: 'NF-e 089.442',
+            quantidadeEnviada: 50,
+            quantidadeRetornada: 50,
+            quantidadeAprovada: 50,
+            quantidadeRejeitada: 0,
+            custoTotalServicoExterno: 1850.0,
+            certificadoTratamentoNumero: 'CERT-GALV-2026-7881',
+            espessuraCamadaMicronsMedida: 85,
+            inspecaoAprovada: true,
+          },
+        },
+        {
+          id: 'op-oper-303',
+          opId: 'op-2026-003',
+          sequencia: 30,
+          nomeOperacao: 'Montagem Final dos Grampos e Kit de Fixação',
           setor: 'MONTAGEM',
           maquinaId: 'maq-montagem-01',
-          maquinaNome: 'Linha de Montagem',
+          maquinaNome: 'Linha de Montagem Mecânica',
           tempoSetupPadraoMinutos: 20,
           tempoCicloPadraoMinutos: 6,
           tempoTotalPadraoMinutos: 320,
@@ -670,6 +928,14 @@ class ProducaoService {
           custoTotalOperacaoReal: 718.1,
           status: 'CONCLUIDA',
           exigeInspecaoQualidade: true,
+          extensaoMontagem: {
+            tipoMontagem: 'MECANICA_PARAFUSADA',
+            torquesEspecificadosNm: 'Torque 65 Nm nos parafusos de fixação M12x45 Classe 8.8',
+            ferramentaTorquimetroUtilizada: 'Torquímetro Digital Gedore Dremometer 20-100 Nm (Calibração Vigente)',
+            quantidadeComponentesMontadosPorPeca: 8,
+            gabaritoMontagemCodigo: 'GAB-MONT-SUP-120',
+            inspecaoAprovada: true,
+          },
         },
       ],
       criadoPor: 'Eng. Roberto Vasconcelos',
@@ -1142,6 +1408,15 @@ class ProducaoService {
       quantidadeConsumida: number;
       lote?: string;
     }[];
+    custoConsumiveis?: number;
+    custoServicosExternos?: number;
+    detalhesCorte?: Partial<ExtensaoCorteLaser>;
+    detalhesDobra?: Partial<ExtensaoDobraCNC>;
+    detalhesSolda?: Partial<ExtensaoSoldaCaldeiraria>;
+    detalhesPintura?: Partial<ExtensaoPinturaAcabamento>;
+    detalhesMontagem?: Partial<ExtensaoMontagem>;
+    detalhesAcabamento?: Partial<ExtensaoAcabamento>;
+    detalhesServicoExterno?: Partial<ExtensaoServicoExterno>;
     observacoes?: string;
   }): {
     apontamento: ApontamentoProducao;
@@ -1163,15 +1438,17 @@ class ProducaoService {
     const operador = this.operadores.find((oprd) => oprd.id === params.operadorId);
     const maquina = this.maquinas.find((m) => m.id === params.maquinaId);
 
-    const operadorNome = operador ? operador.nome : 'Operador Padrão';
+    const operadorNome = operador ? operador.nome : (operacao.operadorDesignado || 'Operador Especialista');
     const operadorCustoHora = operador ? operador.custoHora : operacao.custoHoraMaoDeObra;
     const maquinaNome = maquina ? maquina.nome : operacao.maquinaNome;
     const maquinaCustoHora = maquina ? maquina.custoHora : operacao.custoHoraMaquina;
 
-    // 1. Cálculo de Custos do Apontamento
+    // 1. Cálculo de Custos com Custo-Hora Parametrizado
     const horasApontadas = params.duracaoMinutos / 60;
     const custoMOD = Number((horasApontadas * operadorCustoHora).toFixed(2));
     const custoCHM = Number((horasApontadas * maquinaCustoHora).toFixed(2));
+    const custoConsumiveisApt = Number(params.custoConsumiveis || params.detalhesCorte?.custoGasConsumiveisTotal || params.detalhesSolda?.custoConsumiveisSolda || params.detalhesPintura?.custoInsumosPintura || params.detalhesAcabamento?.custoInsumosAcabamento || 0);
+    const custoServExternosApt = Number(params.custoServicosExternos || params.detalhesServicoExterno?.custoTotalServicoExterno || 0);
 
     // 2. Consumo Real de Materiais
     let custoMateriaisApontamento = 0;
@@ -1207,7 +1484,7 @@ class ProducaoService {
       }
     }
 
-    const custoTotalApontamento = Number((custoMOD + custoCHM + custoMateriaisApontamento).toFixed(2));
+    const custoTotalApontamento = Number((custoMOD + custoCHM + custoMateriaisApontamento + custoConsumiveisApt + custoServExternosApt).toFixed(2));
 
     // 3. Atualização dos Tempos e Custos da Operação
     if (params.tipoApontamento === 'SETUP') {
@@ -1218,9 +1495,164 @@ class ProducaoService {
     operacao.tempoTotalRealMinutos = operacao.tempoSetupRealMinutos + operacao.tempoExecucaoRealMinutos + operacao.tempoParadasMinutos;
     operacao.custoMaoDeObraReal = Number((operacao.custoMaoDeObraReal + custoMOD).toFixed(2));
     operacao.custoMaquinaReal = Number((operacao.custoMaquinaReal + custoCHM).toFixed(2));
-    operacao.custoTotalOperacaoReal = Number((operacao.custoMaoDeObraReal + operacao.custoMaquinaReal).toFixed(2));
+    operacao.custoConsumiveisReal = Number(((operacao.custoConsumiveisReal || 0) + custoConsumiveisApt).toFixed(2));
+    if (custoServExternosApt > 0) {
+      operacao.custoServicosExternos = Number(((operacao.custoServicosExternos || 0) + custoServExternosApt).toFixed(2));
+    }
+    operacao.custoTotalOperacaoReal = Number(
+      (operacao.custoMaoDeObraReal + operacao.custoMaquinaReal + (operacao.custoConsumiveisReal || 0) + (operacao.custoServicosExternos || 0)).toFixed(2)
+    );
 
-    // 4. Quantidades Produzidas, Refugos e Retrabalhos
+    // 4. Integração das Extensões Específicas na Operação
+    if (params.detalhesCorte) {
+      operacao.extensaoCorte = {
+        ...(operacao.extensaoCorte || {
+          tipoProcessoCorte: 'LASER_FIBRA',
+          material: op.produtoDescricao,
+          espessuraMm: 6.0,
+          chapaDescricao: 'Chapa Padrão de Engenharia',
+          formatoChapaLarguraMm: 1500,
+          formatoChapaComprimentoMm: 6000,
+          quantidadePecasPlanejada: op.quantidadePlanejada,
+          quantidadePecasCortadasBoas: 0,
+          quantidadePecasRefugadas: 0,
+          pesoLiquidoPecaUnitariaKg: 50.0,
+          pesoLiquidoTotalPecasKg: 50.0 * op.quantidadePlanejada,
+          temRetalhoAproveitavel: false,
+          pesoSucataTotalKg: 0,
+          tipoSucata: 'ESQUELETO_LASER',
+        }),
+        ...params.detalhesCorte,
+      };
+      if (params.quantidadeBoas) {
+        operacao.extensaoCorte.quantidadePecasCortadasBoas = (operacao.extensaoCorte.quantidadePecasCortadasBoas || 0) + params.quantidadeBoas;
+      }
+      if (params.quantidadeRefugo) {
+        operacao.extensaoCorte.quantidadePecasRefugadas = (operacao.extensaoCorte.quantidadePecasRefugadas || 0) + params.quantidadeRefugo;
+      }
+    }
+
+    if (params.detalhesDobra) {
+      operacao.extensaoDobra = {
+        ...(operacao.extensaoDobra || {
+          maquinaNome: maquinaNome,
+          ferramentaConjunto: operacao.ferramenta || 'Punção e Matriz Standard',
+          puncaoModelo: 'Punção Standard',
+          matrizModelo: 'Matriz Standard V60',
+          aberturaMatrizV_Mm: 60,
+          raioInternoDobraMm: 4.0,
+          espessuraMaterialMm: 4.0,
+          materialDescricao: op.produtoDescricao,
+          angulosDescricao: '90 graus',
+          compensacaoSpringback: 1.5,
+          totalDobrasPorPeca: 2,
+          sequenciaPassosDobra: [],
+          tempoSetupPrevistoMinutos: operacao.tempoSetupPadraoMinutos,
+          tempoSetupRealMinutos: operacao.tempoSetupRealMinutos,
+          tempoDobraPrevistoPorPecaMinutos: operacao.tempoCicloPadraoMinutos,
+          tempoDobraRealPorPecaMinutos: 0,
+          tempoTotalPrevistoMinutos: operacao.tempoTotalPadraoMinutos,
+          tempoTotalRealMinutos: operacao.tempoTotalRealMinutos,
+          quantidadePlanejada: op.quantidadePlanejada,
+          quantidadeDobradaBoas: 0,
+          quantidadeRefugoDobra: 0,
+          quantidadeRetrabalhoDobra: 0,
+          houveRetrabalhoDobra: false,
+        }),
+        ...params.detalhesDobra,
+      };
+      if (params.quantidadeBoas) {
+        operacao.extensaoDobra.quantidadeDobradaBoas = (operacao.extensaoDobra.quantidadeDobradaBoas || 0) + params.quantidadeBoas;
+      }
+      if (params.quantidadeRefugo) {
+        operacao.extensaoDobra.quantidadeRefugoDobra = (operacao.extensaoDobra.quantidadeRefugoDobra || 0) + params.quantidadeRefugo;
+      }
+      if (params.quantidadeRetrabalho) {
+        operacao.extensaoDobra.quantidadeRetrabalhoDobra = (operacao.extensaoDobra.quantidadeRetrabalhoDobra || 0) + params.quantidadeRetrabalho;
+        operacao.extensaoDobra.houveRetrabalhoDobra = true;
+      }
+    }
+
+    if (params.detalhesSolda) {
+      operacao.extensaoSolda = {
+        ...(operacao.extensaoSolda || {
+          processo: 'MIG_MAG_GMAW',
+          gasProtecao: 'MISTURA_AR_CO2_20',
+          consumivelArameCodigo: 'AWS ER70S-6 Ø 1.2mm',
+          consumoArameEstimadoKg: 20.0,
+          procedimentoEPS_WPS: 'EPS-PADRAO-01',
+          qualificacaoSoldadorNorma: 'AWS D1.1',
+          tipoJunta: 'TOPO_COM_CHANFRO_V',
+          aprovadoQualidadeSolda: true,
+        }),
+        ...params.detalhesSolda,
+      };
+    }
+
+    if (params.detalhesPintura) {
+      operacao.extensaoPintura = {
+        ...(operacao.extensaoPintura || {
+          tipoPintura: 'ELETROSTATICA_PO',
+          corRAL: 'RAL 7016',
+          corDescricao: 'Cinza Industrial',
+          tintaCodigo: 'TINTA-EPOXI-PADRAO',
+          espessuraCamadaMicronsPrevista: 80,
+          temperaturaEstufaC: 180,
+          tempoEstufaMinutos: 20,
+          areaTotalPinturaM2: 50.0,
+          preTratamentoSuperficie: 'DESENGRAXE_E_FOSFATIZACAO',
+          consumoTintaEstimadoKgOuLitros: 15.0,
+        }),
+        ...params.detalhesPintura,
+      };
+    }
+
+    if (params.detalhesMontagem) {
+      operacao.extensaoMontagem = {
+        ...(operacao.extensaoMontagem || {
+          tipoMontagem: 'MECANICA_PARAFUSADA',
+          torquesEspecificadosNm: 'Conforme manual de montagem',
+          ferramentaTorquimetroUtilizada: 'Torquímetro calibrado',
+          quantidadeComponentesMontadosPorPeca: 4,
+          inspecaoAprovada: true,
+        }),
+        ...params.detalhesMontagem,
+      };
+    }
+
+    if (params.detalhesAcabamento) {
+      operacao.extensaoAcabamento = {
+        ...(operacao.extensaoAcabamento || {
+          tipoAcabamento: 'ESCOVADO',
+          granulometriaLixa: 'Grão 240',
+          rugosidadeMaximaRa_Microns: 0.8,
+          aprovadoInspecaoVisual: true,
+        }),
+        ...params.detalhesAcabamento,
+      };
+    }
+
+    if (params.detalhesServicoExterno) {
+      operacao.extensaoServicoExterno = {
+        ...(operacao.extensaoServicoExterno || {
+          tipoServico: 'GALVANIZACAO_A_FOGO',
+          fornecedorNome: 'Prestador Terceirizado Qualificado',
+          fornecedorCnpj: '00.000.000/0001-00',
+          pedidoCompraNumero: 'PC-TERC-01',
+          dataEnvioRemessa: new Date().toISOString().split('T')[0],
+          dataRetornoPrevista: new Date().toISOString().split('T')[0],
+          quantidadeEnviada: op.quantidadePlanejada,
+          quantidadeRetornada: 0,
+          quantidadeAprovada: 0,
+          quantidadeRejeitada: 0,
+          custoTotalServicoExterno: 0,
+          inspecaoAprovada: true,
+        }),
+        ...params.detalhesServicoExterno,
+      };
+    }
+
+    // 5. Quantidades Produzidas, Refugos e Retrabalhos
     const qtdBoas = Number(params.quantidadeBoas || 0);
     const qtdRefugo = Number(params.quantidadeRefugo || 0);
     const qtdRetrabalho = Number(params.quantidadeRetrabalho || 0);
@@ -1237,7 +1669,7 @@ class ProducaoService {
       operacao.dataInicioReal = params.dataHoraInicio;
     }
 
-    // 5. Repasse para a Próxima Operação no Fluxo Sequencial
+    // 6. Repasse para a Próxima Operação no Fluxo Sequencial
     const proximaOperacaoIndex = operacaoIndex + 1;
     if (proximaOperacaoIndex < op.operacoes.length) {
       const proximaOperacao = op.operacoes[proximaOperacaoIndex];
@@ -1261,11 +1693,10 @@ class ProducaoService {
       operacao.status = 'EM_SETUP';
     }
 
-    // 6. Registro de Refugo (se houver)
+    // 7. Registro de Refugo (se houver)
     let refugoRegistro: RefugoProducao | undefined;
     if (qtdRefugo > 0) {
       op.quantidadeRefugada += qtdRefugo;
-      // Custo proporcional absorvido até a etapa
       const custoUnitarioPerda = (op.custoPlanejado.total / op.quantidadePlanejada) * 0.8;
       const custoPerdaTotal = Number((qtdRefugo * custoUnitarioPerda).toFixed(2));
 
@@ -1296,7 +1727,7 @@ class ProducaoService {
       op.custoReal.perdasRefugos += custoPerdaTotal;
     }
 
-    // 7. Registro de Retrabalho (se houver)
+    // 8. Registro de Retrabalho (se houver)
     let retrabalhoRegistro: RetrabalhoProducao | undefined;
     if (qtdRetrabalho > 0) {
       retrabalhoRegistro = {
@@ -1327,16 +1758,20 @@ class ProducaoService {
       this.retrabalhos.unshift(retrabalhoRegistro);
     }
 
-    // 8. Atualização Geral da OP
+    // 9. Atualização Geral e Custos da OP
     op.saldoRestante = Math.max(0, op.quantidadePlanejada - (op.quantidadeProduzida + op.quantidadeRefugada));
     op.quantidadeEmProcesso = op.quantidadePlanejada - op.quantidadeProduzida - op.quantidadeRefugada;
 
     // Atualização dos Custos Acumulados da OP
     let somaMOD = 0;
     let somaCHM = 0;
+    let somaConsumiveis = 0;
+    let somaServicosExt = 0;
     for (const o of op.operacoes) {
       somaMOD += o.custoMaoDeObraReal;
       somaCHM += o.custoMaquinaReal;
+      somaConsumiveis += o.custoConsumiveisReal || 0;
+      somaServicosExt += o.custoServicosExternos || 0;
     }
     let somaMatReal = 0;
     for (const m of op.materiais) {
@@ -1346,8 +1781,10 @@ class ProducaoService {
     op.custoReal.materiais = Number(somaMatReal.toFixed(2));
     op.custoReal.maoDeObra = Number(somaMOD.toFixed(2));
     op.custoReal.maquina = Number(somaCHM.toFixed(2));
+    op.custoReal.consumiveis = Number(somaConsumiveis.toFixed(2));
+    op.custoReal.servicosExternos = Number(somaServicosExt.toFixed(2));
     op.custoReal.total = Number(
-      (op.custoReal.materiais + op.custoReal.maoDeObra + op.custoReal.maquina + op.custoReal.retrabalhos + op.custoReal.perdasRefugos).toFixed(2)
+      (op.custoReal.materiais + op.custoReal.maoDeObra + op.custoReal.maquina + (op.custoReal.consumiveis || 0) + (op.custoReal.servicosExternos || 0) + op.custoReal.retrabalhos + op.custoReal.perdasRefugos).toFixed(2)
     );
 
     if (!op.dataInicioReal) {
@@ -1356,7 +1793,7 @@ class ProducaoService {
     op.status = 'EM_PRODUCAO';
     op.atualizadoEm = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-    // 9. Criação do Objeto de Apontamento
+    // 10. Criação do Objeto de Apontamento com Custo Parametrizado
     const novoApontamento: ApontamentoProducao = {
       id: `apt-${Date.now()}`,
       opId: op.id,
@@ -1372,6 +1809,8 @@ class ProducaoService {
       operadorNome: operadorNome,
       maquinaId: params.maquinaId,
       maquinaNome: maquinaNome,
+      operadorCustoHoraParametrizado: operadorCustoHora,
+      maquinaCustoHoraParametrizado: maquinaCustoHora,
       quantidadeBoas: qtdBoas,
       quantidadeRefugo: qtdRefugo,
       quantidadeRetrabalho: qtdRetrabalho,
@@ -1379,7 +1818,16 @@ class ProducaoService {
       custoMaoDeObraCalculado: custoMOD,
       custoMaquinaCalculado: custoCHM,
       custoMateriaisCalculado: custoMateriaisApontamento,
+      custoConsumiveisCalculado: custoConsumiveisApt,
+      custoServicosExternos: custoServExternosApt,
       custoTotalApontamento: custoTotalApontamento,
+      detalhesCorte: params.detalhesCorte as ExtensaoCorteLaser,
+      detalhesDobra: params.detalhesDobra as ExtensaoDobraCNC,
+      detalhesSolda: params.detalhesSolda as ExtensaoSoldaCaldeiraria,
+      detalhesPintura: params.detalhesPintura as ExtensaoPinturaAcabamento,
+      detalhesMontagem: params.detalhesMontagem as ExtensaoMontagem,
+      detalhesAcabamento: params.detalhesAcabamento as ExtensaoAcabamento,
+      detalhesServicoExterno: params.detalhesServicoExterno as ExtensaoServicoExterno,
       observacoes: params.observacoes,
       empresaId: params.empresaId,
       criadoEm: new Date().toISOString().replace('T', ' ').substring(0, 19),
@@ -1690,6 +2138,137 @@ class ProducaoService {
       maquinasTotal: this.maquinas.length,
       maquinasParadasCount: this.maquinas.filter((m) => m.status === 'PARADA').length,
       operadoresAtivos: this.operadores.filter((o) => o.status === 'EM_OPERACAO').length,
+    };
+  }
+
+  /**
+   * Resumo Consolidado de Corte a Laser / Serra / Plasma
+   */
+  public obterResumoCorte(empresaId: string, opId?: string) {
+    const ops = this.listarOrdens(empresaId, opId ? { busca: opId } : undefined);
+    const cortes: Array<{
+      opId: string;
+      opNumero: string;
+      produtoCodigo: string;
+      operacaoId: string;
+      operacaoNome: string;
+      extensaoCorte: ExtensaoCorteLaser;
+      status: string;
+    }> = [];
+
+    for (const op of ops) {
+      for (const oper of op.operacoes) {
+        if (oper.extensaoCorte) {
+          cortes.push({
+            opId: op.id,
+            opNumero: op.numero,
+            produtoCodigo: op.produtoCodigo,
+            operacaoId: oper.id,
+            operacaoNome: oper.nomeOperacao,
+            extensaoCorte: oper.extensaoCorte,
+            status: oper.status,
+          });
+        }
+      }
+    }
+
+    return cortes;
+  }
+
+  /**
+   * Resumo Consolidado de Dobra CNC
+   */
+  public obterResumoDobra(empresaId: string, opId?: string) {
+    const ops = this.listarOrdens(empresaId, opId ? { busca: opId } : undefined);
+    const dobras: Array<{
+      opId: string;
+      opNumero: string;
+      produtoCodigo: string;
+      operacaoId: string;
+      operacaoNome: string;
+      extensaoDobra: ExtensaoDobraCNC;
+      status: string;
+    }> = [];
+
+    for (const op of ops) {
+      for (const oper of op.operacoes) {
+        if (oper.extensaoDobra) {
+          dobras.push({
+            opId: op.id,
+            opNumero: op.numero,
+            produtoCodigo: op.produtoCodigo,
+            operacaoId: oper.id,
+            operacaoNome: oper.nomeOperacao,
+            extensaoDobra: oper.extensaoDobra,
+            status: oper.status,
+          });
+        }
+      }
+    }
+
+    return dobras;
+  }
+
+  /**
+   * Análise Detalhada de Custo Parametrizado vs Real por Operação e Recursos
+   */
+  public obterAnaliseCustosParametrizados(empresaId: string, opId: string) {
+    const op = this.buscarOrdemPorId(opId, empresaId);
+    if (!op) {
+      throw new Error(`Ordem de Produção não encontrada: ID ${opId}`);
+    }
+
+    const operacoesAnalise = op.operacoes.map((oper) => {
+      const tempoPrevistoHoras = oper.tempoTotalPadraoMinutos / 60;
+      const tempoRealHoras = oper.tempoTotalRealMinutos / 60;
+
+      const custoMODPrevisto = Number((tempoPrevistoHoras * oper.custoHoraMaoDeObra).toFixed(2));
+      const custoCHMPrevisto = Number((tempoPrevistoHoras * oper.custoHoraMaquina).toFixed(2));
+      const custoTotalPrevisto = Number((custoMODPrevisto + custoCHMPrevisto).toFixed(2));
+
+      const custoMODReal = oper.custoMaoDeObraReal;
+      const custoCHMReal = oper.custoMaquinaReal;
+      const custoConsumiveisReal = oper.custoConsumiveisReal || 0;
+      const custoServicosExtReal = oper.custoServicosExternos || 0;
+      const custoTotalReal = oper.custoTotalOperacaoReal;
+
+      const variacaoValor = Number((custoTotalReal - custoTotalPrevisto).toFixed(2));
+      const variacaoPercentual = custoTotalPrevisto > 0 ? Number(((variacaoValor / custoTotalPrevisto) * 100).toFixed(1)) : 0;
+
+      return {
+        operacaoId: oper.id,
+        sequencia: oper.sequencia,
+        nomeOperacao: oper.nomeOperacao,
+        setor: oper.setor,
+        maquinaNome: oper.maquinaNome,
+        custoHoraParametrizadoMaquina: oper.custoHoraMaquina,
+        custoHoraParametrizadoMaoDeObra: oper.custoHoraMaoDeObra,
+        tempoPrevistoMinutos: oper.tempoTotalPadraoMinutos,
+        tempoRealMinutos: oper.tempoTotalRealMinutos,
+        custoMODPrevisto,
+        custoCHMPrevisto,
+        custoTotalPrevisto,
+        custoMODReal,
+        custoCHMReal,
+        custoConsumiveisReal,
+        custoServicosExtReal,
+        custoTotalReal,
+        variacaoValor,
+        variacaoPercentual,
+        status: oper.status,
+      };
+    });
+
+    return {
+      opId: op.id,
+      opNumero: op.numero,
+      produtoCodigo: op.produtoCodigo,
+      produtoDescricao: op.produtoDescricao,
+      quantidadePlanejada: op.quantidadePlanejada,
+      custoPlanejadoTotal: op.custoPlanejado,
+      custoRealTotal: op.custoReal,
+      variacaoGeralCusto: Number((op.custoReal.total - op.custoPlanejado.total).toFixed(2)),
+      operacoes: operacoesAnalise,
     };
   }
 }

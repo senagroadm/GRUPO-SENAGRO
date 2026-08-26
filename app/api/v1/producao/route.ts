@@ -19,6 +19,16 @@ export async function GET(req: NextRequest) {
     const retrabalhos = producaoService.listarRetrabalhos(empresaId);
     const apontamentos = producaoService.listarApontamentos(empresaId);
     const stats = producaoService.obterEstatisticas(empresaId);
+    const resumoCorte = producaoService.obterResumoCorte(empresaId);
+    const resumoDobra = producaoService.obterResumoDobra(empresaId);
+
+    const analisesCustos = ordens.map((op) => {
+      try {
+        return producaoService.obterAnaliseCustosParametrizados(empresaId, op.id);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
 
     return NextResponse.json({
       success: true,
@@ -30,6 +40,9 @@ export async function GET(req: NextRequest) {
       retrabalhos,
       apontamentos,
       stats,
+      resumoCorte,
+      resumoDobra,
+      analisesCustos,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

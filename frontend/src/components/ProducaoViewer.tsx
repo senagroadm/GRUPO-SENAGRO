@@ -31,7 +31,11 @@ import {
   X,
   Lock,
   Unlock,
+  Scissors,
+  Sliders,
 } from 'lucide-react';
+import { ProcessosTecnicosViewer } from './ProcessosTecnicosViewer';
+import { MotorCustosViewer } from './MotorCustosViewer';
 import {
   OrdemProducaoCompleta,
   OpMaterial,
@@ -54,7 +58,7 @@ interface ProducaoViewerProps {
 
 export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'ops' | 'kiosk_apontamento' | 'paradas' | 'qualidade' | 'custos'
+    'dashboard' | 'ops' | 'processos' | 'kiosk_apontamento' | 'paradas' | 'qualidade' | 'custos'
   >('dashboard');
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -66,6 +70,8 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
   const [retrabalhos, setRetrabalhos] = useState<RetrabalhoProducao[]>([]);
   const [apontamentos, setApontamentos] = useState<ApontamentoProducao[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [resumoCorte, setResumoCorte] = useState<any[]>([]);
+  const [resumoDobra, setResumoDobra] = useState<any[]>([]);
 
   // Filtros
   const [filtroStatus, setFiltroStatus] = useState<string>('TODOS');
@@ -126,6 +132,8 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
         setRetrabalhos(data.retrabalhos || []);
         setApontamentos(data.apontamentos || []);
         setStats(data.stats || null);
+        setResumoCorte(data.resumoCorte || []);
+        setResumoDobra(data.resumoDobra || []);
 
         if (data.ordens?.length > 0 && !kioskOpId) {
           const primeiraOp = data.ordens[0];
@@ -157,6 +165,8 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
           setRetrabalhos(data.retrabalhos || []);
           setApontamentos(data.apontamentos || []);
           setStats(data.stats || null);
+          setResumoCorte(data.resumoCorte || []);
+          setResumoDobra(data.resumoDobra || []);
 
           if (data.ordens?.length > 0) {
             const primeiraOp = data.ordens[0];
@@ -521,6 +531,17 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
           >
             <Layers className="w-4 h-4" />
             Ordens de Produção ({ops.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('processos')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'processos'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Scissors className="w-4 h-4" />
+            Engenharia & Processos Técnicos
           </button>
           <button
             onClick={() => setActiveTab('kiosk_apontamento')}
@@ -981,6 +1002,16 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
         </div>
       )}
 
+      {/* ABA 2.5: ENGENHARIA DE PROCESSOS & EXTENSÕES TÉCNICAS */}
+      {activeTab === 'processos' && (
+        <ProcessosTecnicosViewer
+          ops={ops}
+          resumoCorte={resumoCorte}
+          resumoDobra={resumoDobra}
+          onOpenOpModal={(op) => setOpDetalheSelecionada(op)}
+        />
+      )}
+
       {/* ABA 3: TERMINAL DO OPERADOR (KIOSK DE APONTAMENTO) */}
       {activeTab === 'kiosk_apontamento' && (
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
@@ -1438,83 +1469,13 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
         </div>
       )}
 
-      {/* ABA 6: CUSTOS REAIS VS PLANEJADOS */}
+      {/* ABA 6: MOTOR DE CUSTOS (PADRÃO × ESTIMADO × REALIZADO & VIGÊNCIAS) */}
       {activeTab === 'custos' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              Comparativo de Custos Industriais: Orçado (BOM/Roteiro) vs Real Realizado
-            </h3>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold">
-                  <th className="py-2.5 px-3">OP</th>
-                  <th className="py-2.5 px-3">Produto</th>
-                  <th className="py-2.5 px-3 text-right">Materiais Previsto</th>
-                  <th className="py-2.5 px-3 text-right">Materiais Real</th>
-                  <th className="py-2.5 px-3 text-right">Mão de Obra Real</th>
-                  <th className="py-2.5 px-3 text-right">Máquina CHM Real</th>
-                  <th className="py-2.5 px-3 text-right">Perdas/Refugo</th>
-                  <th className="py-2.5 px-3 text-right">Custo Total Planejado</th>
-                  <th className="py-2.5 px-3 text-right">Custo Total Real</th>
-                  <th className="py-2.5 px-3 text-right">Desvio</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {ops.map((op) => {
-                  const desvio = op.custoReal.total - op.custoPlanejado.total;
-                  const percentual =
-                    op.custoPlanejado.total > 0
-                      ? Math.round((op.custoReal.total / op.custoPlanejado.total) * 100)
-                      : 0;
-
-                  return (
-                    <tr key={op.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-mono font-bold text-blue-700">{op.numero}</td>
-                      <td className="py-2.5 px-3 text-slate-800 font-medium truncate max-w-[200px]">
-                        {op.produtoDescricao}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono">
-                        R$ {op.custoPlanejado.materiais.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
-                        R$ {op.custoReal.materiais.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono">
-                        R$ {op.custoReal.maoDeObra.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono">
-                        R$ {op.custoReal.maquina.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-rose-600 font-bold">
-                        {op.custoReal.perdasRefugos > 0 ? `R$ ${op.custoReal.perdasRefugos.toFixed(2)}` : '-'}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-600 font-semibold">
-                        R$ {op.custoPlanejado.total.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
-                        R$ {op.custoReal.total.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                            percentual <= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                          }`}
-                        >
-                          {percentual}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <MotorCustosViewer
+          empresaId={empresaId}
+          ops={ops}
+          onOpenOpModal={(op) => setOpDetalheSelecionada(op)}
+        />
       )}
 
       {/* MODAL DETALHES DA OP */}

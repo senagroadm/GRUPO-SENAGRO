@@ -1,10 +1,12 @@
 /**
  * PORT: IBankingPort
- * Contrato de integração bancária para boletos, arquivos CNAB 240/400 e conciliação bancária.
- * Dependência externa marcada como: TODO / decision-needed (CNAB tradicional vs APIs Open Finance BB/Itaú/Bradesco/Santander/Sicoob).
+ * Contrato de integração bancária para boletos, cobranças, PIX híbrido e conciliação bancária.
  */
+export * from '../modules/bancario/bancario-types';
+export * from '../adapters/banking/banco-adapter.interface';
 
-export interface GerarBoletoInput {
+// Aliases para compatibilidade
+export type GerarBoletoInput = {
   empresaId: string;
   tituloReceberId: string;
   pagador: {
@@ -17,15 +19,15 @@ export interface GerarBoletoInput {
   multaPercentual?: number;
   jurosMensalPercentual?: number;
   instrucoes?: string[];
-}
+};
 
-export interface ResultadoBoleto {
+export type ResultadoBoleto = {
   nossoNumero: string;
   linhaDigitavel: string;
   codigoBarras: string;
   qrCodePix?: string;
   pdfUrl?: string;
-}
+};
 
 export interface IBankingPort {
   gerarBoleto(dados: GerarBoletoInput): Promise<ResultadoBoleto>;

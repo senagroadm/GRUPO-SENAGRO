@@ -1,6 +1,6 @@
 {
   "name": "ERP Industrial Multiempresa",
-  "description": "Sistema ERP industrial multiempresa com módulos de Execução de Produção & Chão de Fábrica (OPs totais e parciais, apontamento em tempo real, fluxo sequencial de operações, paradas de máquina, refugo e retrabalho, controle de custos e encerramento estrito), Engenharia de Produto & Processos (BOM, roteiros, nesting, CAD/CAM), Planejamento e Controle de Produção (PCP) com motor determinístico MRP, Compras & Suprimentos, Estoque Multiempresa, Pedidos de Venda, Crédito & Risco com Adapter Serasa, Orçamento Técnico CPQ, CRM e Gestão Multi-tenant.",
+  "description": "Sistema ERP industrial multiempresa com Módulo Bancário & Cobrança (contas bancárias, caixas fabris, emissão e registro de boletos FEBRABAN, PIX EMV QR Code híbrido, BillingProvider/BancoAdapter), Conciliação Bancária Avançada (importação OFX 1.x/2.x e CSV configurável por presets bancários, correspondência automática com scoring ponderado de confiança Alta/Média/Baixa, liquidação automática, tarifas, transferências internas e intercompany, idempotência por FITID e auditoria append-only), Núcleo Financeiro (AP/AR, SoD, DRE, fluxo de caixa), Camada Fiscal Desacoplada (NF-e/NFS-e/IBS-CBS), Expedição OTIF, Patrimônio & Calibração RBC, Qualidade & RNC (ISO 9001), Chão de Fábrica (Módulo 10), Engenharia BOM, PCP MRP, Compras, Estoque e Orçamento CPQ.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

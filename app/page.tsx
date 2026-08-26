@@ -39,6 +39,7 @@ import {
   ShoppingCart,
   Boxes,
   Compass,
+  Receipt,
 } from 'lucide-react';
 import { EMPRESAS_GRUPO, Empresa } from '../backend/core/types/company';
 import { MODULOS_ERP, ModuloDefinition } from '../backend/modules/registry';
@@ -60,13 +61,18 @@ import { ComprasViewer } from '../frontend/src/components/ComprasViewer';
 import { EngenhariaViewer } from '../frontend/src/components/EngenhariaViewer';
 import { PcpViewer } from '../frontend/src/components/PcpViewer';
 import { ProducaoViewer } from '../frontend/src/components/ProducaoViewer';
+import { QualidadeViewer } from '../frontend/src/components/QualidadeViewer';
+import { PatrimonioViewer } from '../frontend/src/components/PatrimonioViewer';
+import { ExpedicaoViewer } from '../frontend/src/components/ExpedicaoViewer';
+import { FiscalViewer } from '../frontend/src/components/FiscalViewer';
+import { BancarioViewer } from '../frontend/src/components/BancarioViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('producao');
+    'overview' | 'bancario' | 'fiscal' | 'expedicao' | 'patrimonio' | 'qualidade' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('bancario');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -298,6 +304,61 @@ export default function ArchitectureDashboard() {
             Visão Geral & Blueprint
           </button>
           <button
+            onClick={() => setActiveTab('bancario')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'bancario'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            Bancário, Boletos & PIX Híbrido (Módulo 11)
+          </button>
+          <button
+            onClick={() => setActiveTab('fiscal')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'fiscal'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            Camada Fiscal Desacoplada (NF-e/NFS-e/IBS/CBS)
+          </button>
+          <button
+            onClick={() => setActiveTab('expedicao')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'expedicao'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            Expedição & Logística (OTIF)
+          </button>
+          <button
+            onClick={() => setActiveTab('patrimonio')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'patrimonio'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            Patrimônio & Calibração
+          </button>
+          <button
+            onClick={() => setActiveTab('qualidade')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'qualidade'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Gestão da Qualidade & RNC
+          </button>
+          <button
             onClick={() => setActiveTab('producao')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'producao'
@@ -511,6 +572,21 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: BANCÁRIO, COBRANÇAS, BOLETOS & PIX HÍBRIDO */}
+        {activeTab === 'bancario' && <BancarioViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: CAMADA FISCAL DESACOPLADA (NF-E, NFS-E & IBS/CBS) */}
+        {activeTab === 'fiscal' && <FiscalViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: EXPEDIÇÃO, LOGÍSTICA & TORRE DE CONTROLE OTIF */}
+        {activeTab === 'expedicao' && <ExpedicaoViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: PATRIMÔNIO, FERRAMENTAS & CALIBRAÇÃO */}
+        {activeTab === 'patrimonio' && <PatrimonioViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: GESTÃO DA QUALIDADE & RNC */}
+        {activeTab === 'qualidade' && <QualidadeViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: CHÃO DE FÁBRICA & EXECUÇÃO DE PRODUÇÃO */}
         {activeTab === 'producao' && <ProducaoViewer empresaId={empresaAtiva.id} />}
 
