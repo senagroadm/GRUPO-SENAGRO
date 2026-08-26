@@ -19,7 +19,8 @@ export type ModuloSistema =
   | 'FISCAL'
   | 'FINANCEIRO'
   | 'RH_OPERACIONAL'
-  | 'BI';
+  | 'BI'
+  | 'AUDITORIA';
 
 export type AcaoPermissao =
   | 'READ'

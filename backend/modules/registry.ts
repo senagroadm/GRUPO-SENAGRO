@@ -354,4 +354,21 @@ export const MODULOS_ERP: ModuloDefinition[] = [
     dependenciasExternas: ['Exportadores Executivos PDF/Excel/CSV'],
     statusIntegracao: 'IMPLEMENTADO',
   },
+  {
+    id: 'mod-auditoria',
+    codigo: 'AUDITORIA',
+    nome: 'Auditoria Transversal & Rastreabilidade',
+    categoria: 'Gestão',
+    descricao: 'Trilha de auditoria append-only transversal a todos os módulos e CNPJs com registro obrigatório de usuário, empresa, IP, user-agent, request-id, snapshots JSON before/after, hash criptográfico de integridade SHA-256 e exportação controlada.',
+    entidadesPrincipais: [
+      'audit_logs',
+      'audit_chain_hashes',
+      'audit_export_requests',
+      'audit_security_events',
+    ],
+    isolamentoEmpresa: 'COMPARTILHADO_COM_ESCOPO',
+    dependenciasInternas: ['ADMINISTRACAO', 'FINANCEIRO', 'FISCAL', 'ESTOQUE', 'COMERCIAL', 'QUALIDADE', 'MANUTENCAO', 'PCP', 'PRODUCAO'],
+    dependenciasExternas: ['Cadeia Criptográfica SHA-256 HMAC', 'Exportadores Audit PDF/CSV/JSON'],
+    statusIntegracao: 'IMPLEMENTADO',
+  },
 ];

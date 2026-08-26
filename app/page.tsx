@@ -69,13 +69,14 @@ import { BancarioViewer } from '../frontend/src/components/BancarioViewer';
 import { CentralCobrancaRiscoViewer } from '../frontend/src/components/CentralCobrancaRiscoViewer';
 import { RhOperacionalViewer } from '../frontend/src/components/RhOperacionalViewer';
 import { BiDashboardViewer } from '../frontend/src/components/BiDashboardViewer';
+import { ConsolidacaoViewer } from '../frontend/src/components/ConsolidacaoViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'bi_dashboards' | 'overview' | 'rh_operacional' | 'cobranca_risco' | 'bancario' | 'fiscal' | 'expedicao' | 'patrimonio' | 'qualidade' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('bi_dashboards');
+    'consolidacao' | 'bi_dashboards' | 'overview' | 'rh_operacional' | 'cobranca_risco' | 'bancario' | 'fiscal' | 'expedicao' | 'patrimonio' | 'qualidade' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('consolidacao');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -295,6 +296,17 @@ export default function ArchitectureDashboard() {
       {/* Navigation Subheader / Geometric Tabs */}
       <div className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex overflow-x-auto gap-1 py-1 scrollbar-none">
+          <button
+            onClick={() => setActiveTab('consolidacao')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'consolidacao'
+                ? 'bg-indigo-700 text-white shadow-xs'
+                : 'text-indigo-950 bg-indigo-100/90 hover:bg-indigo-200'
+            }`}
+          >
+            <Layers className="w-4 h-4 text-indigo-300" />
+            Consolidação 5 Empresas & Intercompany
+          </button>
           <button
             onClick={() => setActiveTab('bi_dashboards')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
@@ -608,6 +620,9 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: CONSOLIDAÇÃO 5 EMPRESAS & INTERCOMPANY (GRUPO TRITECH) */}
+        {activeTab === 'consolidacao' && <ConsolidacaoViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: BI & DASHBOARDS CONSOLIDADOS (5 CNPJS GRUPO TRITECH) */}
         {activeTab === 'bi_dashboards' && <BiDashboardViewer empresaAtiva={empresaAtiva} />}
 
