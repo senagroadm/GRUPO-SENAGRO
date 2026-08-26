@@ -66,13 +66,16 @@ import { PatrimonioViewer } from '../frontend/src/components/PatrimonioViewer';
 import { ExpedicaoViewer } from '../frontend/src/components/ExpedicaoViewer';
 import { FiscalViewer } from '../frontend/src/components/FiscalViewer';
 import { BancarioViewer } from '../frontend/src/components/BancarioViewer';
+import { CentralCobrancaRiscoViewer } from '../frontend/src/components/CentralCobrancaRiscoViewer';
+import { RhOperacionalViewer } from '../frontend/src/components/RhOperacionalViewer';
+import { BiDashboardViewer } from '../frontend/src/components/BiDashboardViewer';
 import { EmpresaRecord } from '../backend/modules/multi-tenant/types';
 
 export default function ArchitectureDashboard() {
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'bancario' | 'fiscal' | 'expedicao' | 'patrimonio' | 'qualidade' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
-  >('bancario');
+    'bi_dashboards' | 'overview' | 'rh_operacional' | 'cobranca_risco' | 'bancario' | 'fiscal' | 'expedicao' | 'patrimonio' | 'qualidade' | 'producao' | 'engenharia' | 'pcp' | 'compras' | 'estoque' | 'pedidos' | 'orcamentos' | 'credito' | 'crm' | 'arquivos' | 'empresas' | 'empresas_crud' | 'usuarios_crud' | 'isolation_tests' | 'modulos' | 'database' | 'adr' | 'rbac_sim' | 'skeleton' | 'security'
+  >('bi_dashboards');
   const [selectedModule, setSelectedModule] = useState<ModuloDefinition | null>(MODULOS_ERP[0]);
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [searchModule, setSearchModule] = useState<string>('');
@@ -293,6 +296,17 @@ export default function ArchitectureDashboard() {
       <div className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex overflow-x-auto gap-1 py-1 scrollbar-none">
           <button
+            onClick={() => setActiveTab('bi_dashboards')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'bi_dashboards'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-900 bg-indigo-50/90 hover:bg-indigo-100'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-indigo-400" />
+            BI & Indicadores (5 CNPJs Grupo TRITECH)
+          </button>
+          <button
             onClick={() => setActiveTab('overview')}
             className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'overview'
@@ -302,6 +316,28 @@ export default function ArchitectureDashboard() {
           >
             <Layers className="w-4 h-4" />
             Visão Geral & Blueprint
+          </button>
+          <button
+            onClick={() => setActiveTab('rh_operacional')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'rh_operacional'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            RH Operacional & Trabalho Fabril (Módulo 12)
+          </button>
+          <button
+            onClick={() => setActiveTab('cobranca_risco')}
+            className={`px-4 py-2.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'cobranca_risco'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'text-rose-800 bg-rose-50/80 hover:bg-rose-100'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Central de Cobrança & Gestão de Risco
           </button>
           <button
             onClick={() => setActiveTab('bancario')}
@@ -572,6 +608,15 @@ export default function ArchitectureDashboard() {
 
       {/* Main Content Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* TAB: BI & DASHBOARDS CONSOLIDADOS (5 CNPJS GRUPO TRITECH) */}
+        {activeTab === 'bi_dashboards' && <BiDashboardViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: RH OPERACIONAL & TRABALHO FABRIL */}
+        {activeTab === 'rh_operacional' && <RhOperacionalViewer empresaAtiva={empresaAtiva} />}
+
+        {/* TAB: CENTRAL DE COBRANÇA, RÉGUA & GESTÃO DE RISCO */}
+        {activeTab === 'cobranca_risco' && <CentralCobrancaRiscoViewer empresaAtiva={empresaAtiva} />}
+
         {/* TAB: BANCÁRIO, COBRANÇAS, BOLETOS & PIX HÍBRIDO */}
         {activeTab === 'bancario' && <BancarioViewer empresaAtiva={empresaAtiva} />}
 

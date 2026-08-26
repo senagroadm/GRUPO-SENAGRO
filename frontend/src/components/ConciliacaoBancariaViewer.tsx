@@ -1626,7 +1626,7 @@ NEWFILEUID:NONE
 
             <div className="p-5 space-y-3">
               <p className="text-xs text-slate-600">
-                Tem certeza que deseja desconciliar o lançamento <strong>"{itemSelecionado.memo}"</strong> (R${' '}
+                Tem certeza que deseja desconciliar o lançamento <strong>&quot;{itemSelecionado.memo}&quot;</strong> (R${' '}
                 {itemSelecionado.valor.toFixed(2)})? O status voltará a ser pendente/sugerido e o evento será registrado na trilha de auditoria.
               </p>
 
