@@ -11,6 +11,9 @@ import { EstoqueViewer } from '../frontend/src/components/EstoqueViewer';
 import { ProducaoViewer } from '../frontend/src/components/ProducaoViewer';
 import { QualidadeViewer } from '../frontend/src/components/QualidadeViewer';
 import { FiscalViewer } from '../frontend/src/components/FiscalViewer';
+import { ExpedicaoViewer } from '../frontend/src/components/ExpedicaoViewer';
+import { ManutencaoViewer } from '../frontend/src/components/ManutencaoViewer';
+import { PatrimonioViewer } from '../frontend/src/components/PatrimonioViewer';
 import { FinanceiroViewer } from '../frontend/src/components/FinanceiroViewer';
 import { TritechAiBridgeViewer } from '../frontend/src/components/TritechAiBridgeViewer';
 import { PerformanceJobsViewer } from '../frontend/src/components/PerformanceJobsViewer';
@@ -27,6 +30,9 @@ import {
   Boxes,
   ShieldCheck,
   Receipt,
+  Truck,
+  Wrench,
+  Gauge,
   Landmark,
   ScrollText,
   Bell,
@@ -139,8 +145,16 @@ export default function ArchitectureDashboard() {
         { id: 'estoque', label: 'Estoque & Intercompany', icon: Boxes },
         { id: 'chaoFabrica', label: 'Chão de Fábrica / PCP', icon: Factory },
         { id: 'qualidade', label: 'Qualidade & RNC', icon: ShieldCheck },
-        { id: 'expedicaoFiscal', label: 'Expedição & Fiscal', icon: Receipt },
+        { id: 'expedicaoLogistica', label: 'Expedição & Logística', icon: Truck },
+        { id: 'expedicaoFiscal', label: 'Faturamento & Fiscal', icon: Receipt },
         { id: 'financeiro', label: 'Financeiro & Bancos', icon: Landmark },
+      ],
+    },
+    {
+      title: 'Ativos, Manutenção & Ferramentaria',
+      items: [
+        { id: 'manutencao', label: 'Manutenção Industrial (PCM)', icon: Wrench },
+        { id: 'patrimonio', label: 'Patrimônio & Calibração', icon: Gauge },
       ],
     },
     {
@@ -415,8 +429,11 @@ export default function ArchitectureDashboard() {
               {activeTab === 'estoque' && <EstoqueViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'chaoFabrica' && <ProducaoViewer empresaId={empresaAtiva.id} />}
               {activeTab === 'qualidade' && <QualidadeViewer empresaAtiva={empresaAtiva} />}
+              {activeTab === 'expedicaoLogistica' && <ExpedicaoViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'expedicaoFiscal' && <FiscalViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'financeiro' && <FinanceiroViewer empresaAtiva={empresaAtiva} />}
+              {activeTab === 'manutencao' && <ManutencaoViewer empresaAtiva={empresaAtiva} />}
+              {activeTab === 'patrimonio' && <PatrimonioViewer empresaAtiva={empresaAtiva} />}
 
               {/* Módulos Administrativos & Governança (Exclusivos para ADMIN) */}
               {activeRole === 'ADMIN' && (
