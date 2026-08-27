@@ -1,27 +1,18 @@
 import React, { useState } from 'react';
 import {
-  Activity,
-  Terminal,
-  AlertTriangle,
   HeartPulse,
   Search,
   CheckCircle2,
-  Server,
   Database,
   Wifi,
   ShieldCheck,
-  Filter,
   RefreshCw,
-  Clock,
   Sparkles,
-  ArrowUpRight,
   Code2,
-  Cpu,
-  Layers,
-  FileText,
   Lock,
   Zap,
 } from 'lucide-react';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface StructuredLog {
   id: string;
@@ -226,6 +217,11 @@ export function ObservabilidadeViewer() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [executandoDiagnostico, setExecutandoDiagnostico] = useState<boolean>(false);
 
+  // Estado do Diagnóstico E2E Supabase
+  const [supabaseTestLoading, setSupabaseTestLoading] = useState<boolean>(false);
+  const [supabaseReport, setSupabaseReport] = useState<any>(null);
+  const [mostrarDetalhesSupabase, setMostrarDetalhesSupabase] = useState<boolean>(false);
+
   const logsFiltrados = logs.filter((log) => {
     const matchNivel = filtroNivel === 'ALL' || log.level === filtroNivel;
     const matchBusca =
@@ -246,6 +242,28 @@ export function ObservabilidadeViewer() {
       setFeedback('✓ Health Check concluído: 5/5 componentes operacionais. Latência média de rede em 18ms.');
       setTimeout(() => setFeedback(null), 4500);
     }, 1500);
+  };
+
+  const handleTestarSupabaseE2E = async () => {
+    setSupabaseTestLoading(true);
+    setFeedback('Executando teste de integração de ponta a ponta com o cluster do Supabase...');
+    try {
+      const res = await safeFetchJson<any>('/api/v1/admin/supabase-test');
+      if (res.success && res.data) {
+        setSupabaseReport(res.data);
+        setMostrarDetalhesSupabase(true);
+        setFeedback(
+          `✓ Diagnóstico Supabase concluído em ${res.data.latencyMs}ms. Status: ${res.data.overallStatus} (${res.data.steps.length} etapas verificadas)`
+        );
+      } else {
+        setFeedback(`Erro ao testar Supabase: ${res.error || 'Falha na resposta'}`);
+      }
+    } catch (err: any) {
+      setFeedback(`Erro na conexão com o Supabase: ${err.message}`);
+    } finally {
+      setSupabaseTestLoading(false);
+      setTimeout(() => setFeedback(null), 6000);
+    }
   };
 
   return (
@@ -275,6 +293,19 @@ export function ObservabilidadeViewer() {
         {/* Botão de Diagnóstico */}
         <div className="flex items-center gap-2">
           <button
+            onClick={handleTestarSupabaseE2E}
+            disabled={supabaseTestLoading}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 rounded-md transition-colors shadow-2xs cursor-pointer"
+          >
+            {supabaseTestLoading ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Database className="w-3.5 h-3.5" />
+            )}
+            {supabaseTestLoading ? 'Testando Supabase...' : 'Testar Supabase E2E'}
+          </button>
+
+          <button
             onClick={handleExecutarDiagnostico}
             disabled={executandoDiagnostico}
             className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-md transition-colors shadow-2xs cursor-pointer"
@@ -288,6 +319,76 @@ export function ObservabilidadeViewer() {
           </button>
         </div>
       </div>
+
+      {/* Painel do Diagnóstico E2E Supabase */}
+      {mostrarDetalhesSupabase && supabaseReport && (
+        <div className="p-4 bg-slate-900 text-slate-100 border-b border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1 bg-emerald-500/20 text-emerald-400 rounded">
+                <Database className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  Diagnóstico de Integração Supabase Cloud
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                      supabaseReport.overallStatus === 'PASS'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    STATUS: {supabaseReport.overallStatus} ({supabaseReport.latencyMs}ms)
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Ambiente: <strong className="text-slate-200">{supabaseReport.environment}</strong> | Verificado em:{' '}
+                  {new Date(supabaseReport.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMostrarDetalhesSupabase(false)}
+              className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded cursor-pointer"
+            >
+              Fechar Painel ✕
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+            {supabaseReport.steps.map((step: any, idx: number) => (
+              <div
+                key={idx}
+                className="p-2.5 rounded bg-slate-800/80 border border-slate-700/80 space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-mono font-bold text-indigo-300 truncate">{step.step}</span>
+                  <span
+                    className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded ${
+                      step.status === 'SUCCESS'
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                        : step.status === 'WARN'
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : 'bg-rose-950 text-rose-400 border border-rose-800'
+                    }`}
+                  >
+                    {step.status}
+                  </span>
+                </div>
+                <div className="text-[11px] font-bold text-white leading-snug">{step.name}</div>
+                <p className="text-[10px] text-slate-300 line-clamp-3 leading-relaxed">{step.details}</p>
+                {step.latencyMs !== undefined && (
+                  <div className="text-[9px] font-mono text-slate-400 pt-1 border-t border-slate-700/50 flex justify-between">
+                    <span>Latência Probe:</span>
+                    <strong className="text-emerald-400">{step.latencyMs} ms</strong>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Toast Feedback */}
       {feedback && (

@@ -49,10 +49,13 @@ export interface DbHealthResult {
 export async function checkDatabaseHealth(): Promise<DbHealthResult> {
   const start = Date.now();
   const config = getAppConfig();
-  const isDefaultLocal = !process.env.DATABASE_URL || config.DATABASE_URL.includes('nexus_password@localhost');
+  const isDefaultLocal =
+    !process.env.DATABASE_URL ||
+    config.DATABASE_URL.includes('nexus_password@localhost') ||
+    config.DATABASE_URL.includes('[SUA-SENHA]');
 
-  // In preview / container development without an external PostgreSQL instance configured,
-  // return active fallback status without attempting blocking localhost connection
+  // In preview / container development without password configured,
+  // return active fallback status without attempting connection
   if (isDefaultLocal) {
     return {
       status: 'healthy',
