@@ -40,6 +40,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Empresa, EMPRESAS_GRUPO } from '@/backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   ConfiguracaoFiscal,
   RegraTributaria,
@@ -176,27 +177,39 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=all`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setConfiguracao(json.data.configuracao);
-        setSeries(json.data.series || []);
-        setOperacoes(json.data.operacoes || []);
-        setRegras(json.data.regras || []);
-        setTribProdutos(json.data.tribProdutos || []);
-        setTribServicos(json.data.tribServicos || []);
-        setCertificados(json.data.certificados || []);
-        setDocumentos(json.data.documentos || []);
-        setLogs(json.data.logs || []);
-        setEventos(json.data.eventos || []);
-        setTitulos(json.data.titulos || []);
-        setAuditoriaFaturamento(json.data.auditoriaFaturamento || []);
+      const res = await safeFetchJson<{
+        configuracao: ConfiguracaoFiscal;
+        series: any[];
+        operacoes: any[];
+        regras: any[];
+        tribProdutos: any[];
+        tribServicos: any[];
+        certificados: any[];
+        documentos: any[];
+        logs: any[];
+        eventos: any[];
+        titulos: any[];
+        auditoriaFaturamento: any[];
+      }>(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=all`);
+
+      if (res.success && res.data) {
+        if (res.data.configuracao) setConfiguracao(res.data.configuracao);
+        setSeries(res.data.series || []);
+        setOperacoes(res.data.operacoes || []);
+        setRegras(res.data.regras || []);
+        setTribProdutos(res.data.tribProdutos || []);
+        setTribServicos(res.data.tribServicos || []);
+        setCertificados(res.data.certificados || []);
+        setDocumentos(res.data.documentos || []);
+        setLogs(res.data.logs || []);
+        setEventos(res.data.eventos || []);
+        setTitulos(res.data.titulos || []);
+        setAuditoriaFaturamento(res.data.auditoriaFaturamento || []);
       }
 
-      const resStatus = await fetch(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=status-servicos`);
-      const jsonStatus = await resStatus.json();
-      if (jsonStatus.success) {
-        setStatusServicos(jsonStatus.data);
+      const resStatus = await safeFetchJson(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=status-servicos`);
+      if (resStatus.success && resStatus.data) {
+        setStatusServicos(resStatus.data);
       }
     } catch (err) {
       console.error('Erro ao carregar dados fiscais:', err);
@@ -206,41 +219,7 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
   };
 
   useEffect(() => {
-    let ignore = false;
-    async function load() {
-      try {
-        const res = await fetch(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=all`);
-        const json = await res.json();
-        if (!ignore && json.success && json.data) {
-          setConfiguracao(json.data.configuracao);
-          setSeries(json.data.series || []);
-          setOperacoes(json.data.operacoes || []);
-          setRegras(json.data.regras || []);
-          setTribProdutos(json.data.tribProdutos || []);
-          setTribServicos(json.data.tribServicos || []);
-          setCertificados(json.data.certificados || []);
-          setDocumentos(json.data.documentos || []);
-          setLogs(json.data.logs || []);
-          setEventos(json.data.eventos || []);
-          setTitulos(json.data.titulos || []);
-          setAuditoriaFaturamento(json.data.auditoriaFaturamento || []);
-        }
-
-        const resStatus = await fetch(`/api/v1/fiscal?empresaId=${empresaAtiva.id}&action=status-servicos`);
-        const jsonStatus = await resStatus.json();
-        if (!ignore && jsonStatus.success) {
-          setStatusServicos(jsonStatus.data);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      ignore = true;
-    };
+    carregarDados();
   }, [empresaAtiva.id]);
 
   // Montar payload de emissão

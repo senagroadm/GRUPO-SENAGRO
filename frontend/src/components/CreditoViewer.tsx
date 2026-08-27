@@ -49,6 +49,7 @@ import {
 } from '../../../backend/modules/credito/credito-types';
 import { Empresa } from '../../../backend/core/types/company';
 import { EmpresaRecord } from '../../../backend/modules/multi-tenant/types';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface CreditoViewerProps {
   empresaAtiva: Empresa | EmpresaRecord;
@@ -123,22 +124,22 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
     setLoading(true);
     try {
       const [resAnalises, resLimites, resBloqueios, resPoliticas, resConsultas, resHist] = await Promise.all([
-        fetch(`/api/v1/credito/analises?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        fetch(`/api/v1/credito/limites?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        fetch(`/api/v1/credito/bloqueios?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        fetch(`/api/v1/credito/politicas?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        fetch(`/api/v1/credito/consultar-bureau?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        fetch(`/api/v1/credito/historico?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
+        safeFetchJson<{ data: AnaliseCredito[] }>(`/api/v1/credito/analises?empresaId=${empresaAtiva.id}`),
+        safeFetchJson<{ data: LimiteCredito[] }>(`/api/v1/credito/limites?empresaId=${empresaAtiva.id}`),
+        safeFetchJson<{ data: BloqueioCredito[] }>(`/api/v1/credito/bloqueios?empresaId=${empresaAtiva.id}`),
+        safeFetchJson<{ data: PoliticaCredito[] }>(`/api/v1/credito/politicas?empresaId=${empresaAtiva.id}`),
+        safeFetchJson<{ data: ConsultaCreditoBureau[] }>(`/api/v1/credito/consultar-bureau?empresaId=${empresaAtiva.id}`),
+        safeFetchJson<{ pagamentos?: HistoricoPagamentoItem[]; relacionamentos?: RelacionamentoClienteEmpresa[] }>(`/api/v1/credito/historico?empresaId=${empresaAtiva.id}`),
       ]);
 
-      if (resAnalises.success) setAnalises(resAnalises.data);
-      if (resLimites.success) setLimites(resLimites.data);
-      if (resBloqueios.success) setBloqueios(resBloqueios.data);
-      if (resPoliticas.success) setPoliticas(resPoliticas.data);
-      if (resConsultas.success) setConsultasBureau(resConsultas.data);
-      if (resHist.success) {
-        setHistoricoPagamentos(resHist.pagamentos || []);
-        setRelacionamentos(resHist.relacionamentos || []);
+      if (resAnalises.success && resAnalises.data?.data) setAnalises(resAnalises.data.data);
+      if (resLimites.success && resLimites.data?.data) setLimites(resLimites.data.data);
+      if (resBloqueios.success && resBloqueios.data?.data) setBloqueios(resBloqueios.data.data);
+      if (resPoliticas.success && resPoliticas.data?.data) setPoliticas(resPoliticas.data.data);
+      if (resConsultas.success && resConsultas.data?.data) setConsultasBureau(resConsultas.data.data);
+      if (resHist.success && resHist.data) {
+        setHistoricoPagamentos(resHist.data.pagamentos || []);
+        setRelacionamentos(resHist.data.relacionamentos || []);
       }
     } catch (err: any) {
       console.error('Erro ao carregar dados de crédito:', err);
@@ -148,44 +149,8 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
   }, [empresaAtiva.id]);
 
   useEffect(() => {
-    let active = true;
-
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const [resAnalises, resLimites, resBloqueios, resPoliticas, resConsultas, resHist] = await Promise.all([
-          fetch(`/api/v1/credito/analises?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-          fetch(`/api/v1/credito/limites?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-          fetch(`/api/v1/credito/bloqueios?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-          fetch(`/api/v1/credito/politicas?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-          fetch(`/api/v1/credito/consultar-bureau?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-          fetch(`/api/v1/credito/historico?empresaId=${empresaAtiva.id}`).then((r) => r.json()),
-        ]);
-
-        if (active) {
-          if (resAnalises.success) setAnalises(resAnalises.data);
-          if (resLimites.success) setLimites(resLimites.data);
-          if (resBloqueios.success) setBloqueios(resBloqueios.data);
-          if (resPoliticas.success) setPoliticas(resPoliticas.data);
-          if (resConsultas.success) setConsultasBureau(resConsultas.data);
-          if (resHist.success) {
-            setHistoricoPagamentos(resHist.pagamentos || []);
-            setRelacionamentos(resHist.relacionamentos || []);
-          }
-        }
-      } catch (err: any) {
-        console.error('Erro ao carregar dados de crédito:', err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    fetchData();
-
-    return () => {
-      active = false;
-    };
-  }, [empresaAtiva.id]);
+    carregarDados();
+  }, [carregarDados]);
 
   const showToast = (tipo: 'sucesso' | 'erro', msg: string) => {
     setFeedback({ tipo, msg });
@@ -198,7 +163,7 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
   const handleCriarAnalise = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/v1/credito/analises', {
+      const res = await safeFetchJson<{ data: AnaliseCredito }>('/api/v1/credito/analises', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -207,12 +172,11 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
           empresaNome: empresaAtiva.nomeFantasia || empresaAtiva.razaoSocial,
         }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!res.success || !res.data?.data) throw new Error(res.error || 'Erro ao criar análise');
 
-      showToast('sucesso', `Análise de crédito ${data.data.protocolo} gerada pelo motor com sucesso!`);
+      showToast('sucesso', `Análise de crédito ${res.data.data.protocolo} gerada pelo motor com sucesso!`);
       setModalNovaAnalise(false);
-      setAnaliseSelecionada(data.data);
+      setAnaliseSelecionada(res.data.data);
       await carregarDados();
     } catch (err: any) {
       showToast('erro', `Erro ao criar análise: ${err.message}`);
@@ -225,17 +189,16 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
     if (!analiseSelecionada) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/v1/credito/analises/${analiseSelecionada.id}/decidir`, {
+      const res = await safeFetchJson<{ data: AnaliseCredito }>(`/api/v1/credito/analises/${analiseSelecionada.id}/decidir`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formDecisao),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!res.success || !res.data?.data) throw new Error(res.error || 'Erro ao registrar decisão');
 
       showToast('sucesso', `Decisão de crédito registrada com sucesso! Novo limite atualizado no ERP.`);
       setModalDecisao(false);
-      setAnaliseSelecionada(data.data);
+      setAnaliseSelecionada(res.data.data);
       await carregarDados();
     } catch (err: any) {
       showToast('erro', `Erro ao registrar decisão: ${err.message}`);
@@ -248,7 +211,7 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
     if (!modalDesbloqueio || !justificativaDesbloqueio) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/v1/credito/bloqueios/${modalDesbloqueio.id}/desbloquear`, {
+      const res = await safeFetchJson<{ error?: string }>(`/api/v1/credito/bloqueios/${modalDesbloqueio.id}/desbloquear`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -257,8 +220,7 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
           usuarioNome: 'Gerente Financeiro - ERP',
         }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!res.success) throw new Error(res.error || 'Erro no desbloqueio');
 
       showToast('sucesso', 'Cliente desbloqueado no ERP com justificativa auditável.');
       setModalDesbloqueio(null);
@@ -274,7 +236,7 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
   const handleConsultaAvulsa = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/v1/credito/consultar-bureau', {
+      const res = await safeFetchJson<{ provider?: string }>('/api/v1/credito/consultar-bureau', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -283,11 +245,10 @@ export function CreditoViewer({ empresaAtiva }: CreditoViewerProps) {
           solicitanteNome: 'Analista de Crédito',
         }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!res.success || !res.data) throw new Error(res.error || 'Erro na consulta externa');
 
-      setResultadoConsultaAvulsa(data);
-      showToast('sucesso', `Consulta via adapter ${data.provider} realizada com sucesso.`);
+      setResultadoConsultaAvulsa(res.data);
+      showToast('sucesso', `Consulta via adapter ${res.data.provider || 'Bureau'} realizada com sucesso.`);
       await carregarDados();
     } catch (err: any) {
       showToast('erro', `Erro na consulta externa: ${err.message}`);

@@ -35,6 +35,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Empresa } from '@/backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   ContaPagar,
   ContaReceber,
@@ -171,21 +172,32 @@ export function FinanceiroViewer({ empresaAtiva }: FinanceiroViewerProps) {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch(`/api/v1/financeiro?empresaId=${empresaAtiva.id}&action=dashboard`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setResumo(json.data.resumo);
-        setContasPagar(json.data.contasPagar || []);
-        setContasReceber(json.data.contasReceber || []);
-        setAdiantamentos(json.data.adiantamentos || []);
-        setFluxoCaixa(json.data.fluxoCaixa || []);
-        setDre(json.data.dre || []);
-        setPlanoContas(json.data.planoContas || []);
-        setCentrosCusto(json.data.centrosCusto || []);
-        setCategorias(json.data.categorias || []);
-        setAuditoriaLogs(json.data.auditoria || []);
-      } else {
-        setErrorMsg(json.error || 'Falha ao carregar núcleo financeiro.');
+      const res = await safeFetchJson<{
+        resumo: ResumoFinanceiroEmpresa;
+        contasPagar: ContaPagar[];
+        contasReceber: ContaReceber[];
+        adiantamentos: AdiantamentoFinanceiro[];
+        fluxoCaixa: ProjecaoFluxoCaixaDia[];
+        dre: DreSinteticoItem[];
+        planoContas: PlanoConta[];
+        centrosCusto: CentroCusto[];
+        categorias: CategoriaFinanceira[];
+        auditoria: AuditoriaFinanceiraLog[];
+      }>(`/api/v1/financeiro?empresaId=${empresaAtiva.id}&action=dashboard`);
+
+      if (res.success && res.data) {
+        if (res.data.resumo) setResumo(res.data.resumo);
+        setContasPagar(res.data.contasPagar || []);
+        setContasReceber(res.data.contasReceber || []);
+        setAdiantamentos(res.data.adiantamentos || []);
+        setFluxoCaixa(res.data.fluxoCaixa || []);
+        setDre(res.data.dre || []);
+        setPlanoContas(res.data.planoContas || []);
+        setCentrosCusto(res.data.centrosCusto || []);
+        setCategorias(res.data.categorias || []);
+        setAuditoriaLogs(res.data.auditoria || []);
+      } else if (res.error) {
+        setErrorMsg(res.error);
       }
     } catch (err: any) {
       setErrorMsg(`Erro de conexão: ${err.message}`);
@@ -218,7 +230,7 @@ export function FinanceiroViewer({ empresaAtiva }: FinanceiroViewerProps) {
 
   const handleAprovarRejeitarPagar = async (contaPagarId: string, aprovado: boolean) => {
     try {
-      const res = await fetch('/api/v1/financeiro', {
+      const res = await safeFetchJson('/api/v1/financeiro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,12 +243,11 @@ export function FinanceiroViewer({ empresaAtiva }: FinanceiroViewerProps) {
           motivoRejeicao: aprovado ? undefined : 'Reprovado por divergência orçamentária',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         showToast(aprovado ? 'Título a pagar APROVADO com sucesso!' : 'Título a pagar REJEITADO.');
         carregarDadosFinanceiros();
       } else {
-        setErrorMsg(data.error);
+        setErrorMsg(res.error || 'Erro ao processar aprovação');
       }
     } catch (e: any) {
       setErrorMsg(e.message);

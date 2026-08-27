@@ -27,6 +27,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   Projeto,
   ProjetoRevisao,
@@ -135,12 +136,11 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
   const carregarProjetos = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/engenharia/projetos?empresaId=${empresaAtiva.id}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setProjetos(json.data);
-        if (json.data.length > 0 && !selectedProjetoId) {
-          setSelectedProjetoId(json.data[0].id);
+      const res = await safeFetchJson<{ data: Projeto[] }>(`/api/v1/engenharia/projetos?empresaId=${empresaAtiva.id}`);
+      if (res.success && res.data?.data) {
+        setProjetos(res.data.data);
+        if (res.data.data.length > 0 && !selectedProjetoId) {
+          setSelectedProjetoId(res.data.data[0].id);
         }
       }
     } catch (err: any) {
@@ -157,11 +157,10 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
       const url = `/api/v1/engenharia/projetos/${projetoId}?empresaId=${empresaAtiva.id}${
         revisaoId ? `&revisaoId=${revisaoId}` : ''
       }`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setDetalhe(json.data);
-        setSelectedRevisaoId(json.data.revisaoSelecionada?.id || null);
+      const res = await safeFetchJson<{ data: ProjetoDetalhado }>(url);
+      if (res.success && res.data?.data) {
+        setDetalhe(res.data.data);
+        setSelectedRevisaoId(res.data.data.revisaoSelecionada?.id || null);
       }
     } catch (err: any) {
       console.error('Erro ao carregar detalhes do projeto:', err);
@@ -198,7 +197,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
   const handleCriarProjeto = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/engenharia/projetos', {
+      const res = await safeFetchJson<{ message?: string; data?: { projeto: Projeto } }>('/api/v1/engenharia/projetos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -237,16 +236,15 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           ],
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Projeto criado com sucesso.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Projeto criado com sucesso.');
         setModalNovoProjetoAberto(false);
         await carregarProjetos();
-        if (data.data?.projeto?.id) {
-          setSelectedProjetoId(data.data.projeto.id);
+        if (res.data.data?.projeto?.id) {
+          setSelectedProjetoId(res.data.data.projeto.id);
         }
       } else {
-        showToast('error', data.error || 'Erro ao criar projeto.');
+        showToast('error', res.error || 'Erro ao criar projeto.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -258,7 +256,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!selectedProjetoId) return;
 
     try {
-      const res = await fetch(`/api/v1/engenharia/projetos/${selectedProjetoId}/revisoes`, {
+      const res = await safeFetchJson<{ message?: string; data?: { revisaoSelecionada: { id: string } } }>(`/api/v1/engenharia/projetos/${selectedProjetoId}/revisoes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -269,19 +267,18 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           clonarRevisaoOrigemId: selectedRevisaoId || undefined,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Nova revisão criada.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Nova revisão criada.');
         setModalNovaRevisaoAberto(false);
-        if (data.data?.revisaoSelecionada?.id) {
-          setSelectedRevisaoId(data.data.revisaoSelecionada.id);
+        if (res.data.data?.revisaoSelecionada?.id) {
+          setSelectedRevisaoId(res.data.data.revisaoSelecionada.id);
         }
         await carregarProjetos();
         if (selectedProjetoId) {
-          await carregarProjetoDetalhado(selectedProjetoId, data.data?.revisaoSelecionada?.id);
+          await carregarProjetoDetalhado(selectedProjetoId, res.data.data?.revisaoSelecionada?.id);
         }
       } else {
-        showToast('error', data.error || 'Erro ao criar nova revisão.');
+        showToast('error', res.error || 'Erro ao criar nova revisão.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -292,7 +289,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!selectedProjetoId) return;
 
     try {
-      const res = await fetch(`/api/v1/engenharia/revisoes/${revisaoId}/ativar`, {
+      const res = await safeFetchJson<{ message?: string }>(`/api/v1/engenharia/revisoes/${revisaoId}/ativar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -302,15 +299,14 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           parecerAprovacao: 'Homologado para produção seriada com atendimento integral às normas de projeto.',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Revisão ativada como VIGENTE.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Revisão ativada como VIGENTE.');
         await carregarProjetos();
         if (selectedProjetoId) {
           await carregarProjetoDetalhado(selectedProjetoId, revisaoId);
         }
       } else {
-        showToast('error', data.error || 'Erro ao ativar revisão.');
+        showToast('error', res.error || 'Erro ao ativar revisão.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -322,7 +318,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!detalhe?.revisaoSelecionada?.id) return;
 
     try {
-      const res = await fetch(`/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/bom/itens`, {
+      const res = await safeFetchJson<{ message?: string }>(`/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/bom/itens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,15 +336,14 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           usuarioNome: 'Engenharia de Processos',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Item adicionado ao BOM.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Item adicionado ao BOM.');
         setModalNovoItemBOMAberto(false);
         if (selectedProjetoId && detalhe.revisaoSelecionada.id) {
           await carregarProjetoDetalhado(selectedProjetoId, detalhe.revisaoSelecionada.id);
         }
       } else {
-        showToast('error', data.error || 'Erro ao adicionar item.');
+        showToast('error', res.error || 'Erro ao adicionar item.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -359,16 +354,15 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!detalhe?.revisaoSelecionada?.id || !selectedProjetoId) return;
 
     try {
-      const res = await fetch(
+      const res = await safeFetchJson(
         `/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/bom/itens?empresaId=${empresaAtiva.id}&itemId=${itemId}`,
         { method: 'DELETE' }
       );
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         showToast('success', 'Item removido do BOM com sucesso.');
         await carregarProjetoDetalhado(selectedProjetoId, detalhe.revisaoSelecionada.id);
       } else {
-        showToast('error', data.error || 'Erro ao remover item.');
+        showToast('error', res.error || 'Erro ao remover item.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -380,7 +374,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!detalhe?.revisaoSelecionada?.id || !selectedProjetoId) return;
 
     try {
-      const res = await fetch(`/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/roteiro/operacoes`, {
+      const res = await safeFetchJson<{ message?: string }>(`/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/roteiro/operacoes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -396,13 +390,12 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           usuarioNome: 'Engenharia de Processos',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Operação adicionada ao roteiro.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Operação adicionada ao roteiro.');
         setModalNovaOpRoteiroAberto(false);
         await carregarProjetoDetalhado(selectedProjetoId, detalhe.revisaoSelecionada.id);
       } else {
-        showToast('error', data.error || 'Erro ao adicionar operação.');
+        showToast('error', res.error || 'Erro ao adicionar operação.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -413,16 +406,15 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!detalhe?.revisaoSelecionada?.id || !selectedProjetoId) return;
 
     try {
-      const res = await fetch(
+      const res = await safeFetchJson(
         `/api/v1/engenharia/revisoes/${detalhe.revisaoSelecionada.id}/roteiro/operacoes?empresaId=${empresaAtiva.id}&operacaoId=${operacaoId}`,
         { method: 'DELETE' }
       );
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         showToast('success', 'Operação removida do roteiro.');
         await carregarProjetoDetalhado(selectedProjetoId, detalhe.revisaoSelecionada.id);
       } else {
-        showToast('error', data.error || 'Erro ao remover operação.');
+        showToast('error', res.error || 'Erro ao remover operação.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -434,7 +426,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!detalhe?.revisaoSelecionada?.id || !selectedProjetoId) return;
 
     try {
-      const res = await fetch('/api/v1/engenharia/arquivos', {
+      const res = await safeFetchJson<{ message?: string }>('/api/v1/engenharia/arquivos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -448,13 +440,12 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           observacoes: formArqObs,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Arquivo técnico vinculado à revisão.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Arquivo técnico vinculado à revisão.');
         setModalNovoArquivoAberto(false);
         await carregarProjetoDetalhado(selectedProjetoId, detalhe.revisaoSelecionada.id);
       } else {
-        showToast('error', data.error || 'Erro ao vincular arquivo.');
+        showToast('error', res.error || 'Erro ao vincular arquivo.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
@@ -466,7 +457,7 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
     if (!selectedProjetoId) return;
 
     try {
-      const res = await fetch('/api/v1/engenharia/ordens-producao', {
+      const res = await safeFetchJson<{ message?: string }>('/api/v1/engenharia/ordens-producao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -478,14 +469,13 @@ export function EngenhariaViewer({ empresaAtiva }: EngenhariaViewerProps) {
           usuarioNome: 'PCP Fábrica',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', data.message || 'Ordem de Produção emitida com snapshot da revisão.');
+      if (res.success && res.data) {
+        showToast('success', res.data.message || 'Ordem de Produção emitida com snapshot da revisão.');
         setModalSimularOpAberto(false);
         setActiveProjectTab('historico');
         await carregarProjetoDetalhado(selectedProjetoId, detalhe?.revisaoSelecionada?.id);
       } else {
-        showToast('error', data.error || 'Erro ao emitir OP.');
+        showToast('error', res.error || 'Erro ao emitir OP.');
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');

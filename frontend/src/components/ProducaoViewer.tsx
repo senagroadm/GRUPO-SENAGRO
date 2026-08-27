@@ -51,6 +51,7 @@ import {
   MotivoRetrabalhoCategoria,
   JustificativaEncerramentoOP,
 } from '@/backend/modules/producao/producao-types';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface ProducaoViewerProps {
   empresaId: string;
@@ -121,22 +122,33 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
 
   const carregarDados = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/producao?empresaId=${empresaId}`);
-      const data = await res.json();
-      if (data.success) {
-        setOps(data.ordens || []);
-        setOperadores(data.operadores || []);
-        setMaquinas(data.maquinas || []);
-        setParadas(data.paradas || []);
-        setRefugos(data.refugos || []);
-        setRetrabalhos(data.retrabalhos || []);
-        setApontamentos(data.apontamentos || []);
-        setStats(data.stats || null);
-        setResumoCorte(data.resumoCorte || []);
-        setResumoDobra(data.resumoDobra || []);
+      const res = await safeFetchJson<{
+        ordens: OrdemProducaoCompleta[];
+        operadores: OperadorProducao[];
+        maquinas: MaquinaCentroTrabalho[];
+        paradas: ParadaProducao[];
+        refugos: RefugoProducao[];
+        retrabalhos: RetrabalhoProducao[];
+        apontamentos: ApontamentoProducao[];
+        stats: any;
+        resumoCorte: any[];
+        resumoDobra: any[];
+      }>(`/api/v1/producao?empresaId=${empresaId}`);
 
-        if (data.ordens?.length > 0 && !kioskOpId) {
-          const primeiraOp = data.ordens[0];
+      if (res.success && res.data) {
+        setOps(res.data.ordens || []);
+        setOperadores(res.data.operadores || []);
+        setMaquinas(res.data.maquinas || []);
+        setParadas(res.data.paradas || []);
+        setRefugos(res.data.refugos || []);
+        setRetrabalhos(res.data.retrabalhos || []);
+        setApontamentos(res.data.apontamentos || []);
+        setStats(res.data.stats || null);
+        setResumoCorte(res.data.resumoCorte || []);
+        setResumoDobra(res.data.resumoDobra || []);
+
+        if (res.data.ordens?.length > 0 && !kioskOpId) {
+          const primeiraOp = res.data.ordens[0];
           setKioskOpId(primeiraOp.id);
           if (primeiraOp.operacoes?.length > 0) {
             setKioskOperacaoId(primeiraOp.operacoes[0].id);
@@ -151,42 +163,8 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
   }, [empresaId, kioskOpId]);
 
   useEffect(() => {
-    let ignore = false;
-    async function init() {
-      try {
-        const res = await fetch(`/api/v1/producao?empresaId=${empresaId}`);
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setOps(data.ordens || []);
-          setOperadores(data.operadores || []);
-          setMaquinas(data.maquinas || []);
-          setParadas(data.paradas || []);
-          setRefugos(data.refugos || []);
-          setRetrabalhos(data.retrabalhos || []);
-          setApontamentos(data.apontamentos || []);
-          setStats(data.stats || null);
-          setResumoCorte(data.resumoCorte || []);
-          setResumoDobra(data.resumoDobra || []);
-
-          if (data.ordens?.length > 0) {
-            const primeiraOp = data.ordens[0];
-            setKioskOpId(primeiraOp.id);
-            if (primeiraOp.operacoes?.length > 0) {
-              setKioskOperacaoId(primeiraOp.operacoes[0].id);
-            }
-          }
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados de produção:', err);
-        if (!ignore) setLoading(false);
-      }
-    }
-    init();
-    return () => {
-      ignore = true;
-    };
-  }, [empresaId]);
+    carregarDados();
+  }, [carregarDados]);
 
   // Handler de Apontamento Kiosk
   const handleRegistrarApontamento = async () => {
@@ -228,15 +206,14 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
         observacoes: kioskObservacoes,
       };
 
-      const res = await fetch('/api/v1/producao/apontamento', {
+      const res = await safeFetchJson<{ error?: string }>('/api/v1/producao/apontamento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const resData = await res.json();
-      if (!resData.success) {
-        alert(`Erro ao registrar apontamento: ${resData.error}`);
+      if (!res.success) {
+        alert(`Erro ao registrar apontamento: ${res.error || 'Erro desconhecido'}`);
         return;
       }
 
@@ -263,7 +240,7 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
   const handleRegistrarParada = async () => {
     try {
       setSalvandoParada(true);
-      const res = await fetch('/api/v1/producao/parada', {
+      const res = await safeFetchJson<{ error?: string }>('/api/v1/producao/parada', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -274,14 +251,13 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
           motivoDescricao: paradaDescricao || 'Parada iniciada no monitor',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         alert('Parada iniciada com sucesso. Máquina em status PARADA.');
         setModalNovaParadaAberto(false);
         setParadaDescricao('');
         await carregarDados();
       } else {
-        alert(`Erro: ${data.error}`);
+        alert(`Erro: ${res.error || 'Falha na parada'}`);
       }
     } catch (err: any) {
       alert(`Erro: ${err.message}`);
@@ -292,7 +268,7 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
 
   const handleFinalizarParada = async (paradaId: string) => {
     try {
-      const res = await fetch('/api/v1/producao/parada', {
+      const res = await safeFetchJson<{ message?: string; error?: string }>('/api/v1/producao/parada', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -300,12 +276,11 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
           empresaId,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
+      if (res.success) {
+        alert(res.data?.message || 'Parada finalizada');
         await carregarDados();
       } else {
-        alert(`Erro: ${data.error}`);
+        alert(`Erro: ${res.error || 'Falha ao finalizar parada'}`);
       }
     } catch (err: any) {
       alert(`Erro: ${err.message}`);
@@ -338,19 +313,18 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
         };
       }
 
-      const res = await fetch('/api/v1/producao/op/encerrar', {
+      const res = await safeFetchJson<{ message?: string; error?: string }>('/api/v1/producao/op/encerrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!data.success) {
-        setErroEncerramento(data.error);
+      if (!res.success) {
+        setErroEncerramento(res.error || 'Erro ao encerrar OP');
         return;
       }
 
-      alert(data.message);
+      alert(res.data?.message || 'OP encerrada com sucesso');
       setModalEncerramentoAberto(false);
       setOpParaEncerrar(null);
       setDescEncerramento('');
@@ -366,7 +340,7 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
   // Handler Concluir Retrabalho
   const handleConcluirRetrabalho = async (retId: string, aprovado: boolean) => {
     try {
-      const res = await fetch('/api/v1/producao/retrabalho', {
+      const res = await safeFetchJson<{ message?: string; error?: string }>('/api/v1/producao/retrabalho', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -377,12 +351,11 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
           aprovadoQualidade: aprovado,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
+      if (res.success) {
+        alert(res.data?.message || 'Retrabalho atualizado');
         await carregarDados();
       } else {
-        alert(`Erro: ${data.error}`);
+        alert(`Erro: ${res.error || 'Erro no retrabalho'}`);
       }
     } catch (err: any) {
       alert(`Erro: ${err.message}`);

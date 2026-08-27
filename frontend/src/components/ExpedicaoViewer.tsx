@@ -42,6 +42,7 @@ import {
   TipoOcorrenciaTransporte,
 } from '@/backend/modules/expedicao/expedicao-types';
 import { Empresa } from '@/backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface ExpedicaoViewerProps {
   empresaAtiva: Empresa;
@@ -110,86 +111,45 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
 
   const prefix = useId();
 
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
       const [resExp, resCar, resTra, resTab, resVei, resMot, resInd] = await Promise.all([
-        fetch('/api/v1/expedicao?tipo=expedicoes', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=cargas', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=transportadoras', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=tabelas_frete', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=veiculos', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=motoristas', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        fetch('/api/v1/expedicao?tipo=indicadores_otif', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
+        safeFetchJson<{ expedicoes: Expedicao[] }>('/api/v1/expedicao?tipo=expedicoes', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ cargas: CargaExpedicao[] }>('/api/v1/expedicao?tipo=cargas', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ transportadoras: Transportadora[] }>('/api/v1/expedicao?tipo=transportadoras', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ tabelasFrete: TabelaFrete[] }>('/api/v1/expedicao?tipo=tabelas_frete', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ veiculos: VeiculoFrota[] }>('/api/v1/expedicao?tipo=veiculos', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ motoristas: Motorista[] }>('/api/v1/expedicao?tipo=motoristas', { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<{ indicadores: IndicadoresLogisticaOTIF }>('/api/v1/expedicao?tipo=indicadores_otif', { headers: { 'x-empresa-id': empresaAtiva.id } }),
       ]);
 
-      if (resExp.expedicoes) {
-        setExpedicoes(resExp.expedicoes);
-        if (resExp.expedicoes.length > 0) {
-          setSelectedExpedicao((prev) => prev || resExp.expedicoes[0]);
+      if (resExp.success && resExp.data?.expedicoes) {
+        setExpedicoes(resExp.data.expedicoes);
+        if (resExp.data.expedicoes.length > 0) {
+          setSelectedExpedicao((prev) => prev || resExp.data!.expedicoes[0]);
         }
       }
-      if (resCar.cargas) setCargas(resCar.cargas);
-      if (resTra.transportadoras) setTransportadoras(resTra.transportadoras);
-      if (resTab.tabelasFrete) setTabelasFrete(resTab.tabelasFrete);
-      if (resVei.veiculos) setVeiculos(resVei.veiculos);
-      if (resMot.motoristas) setMotoristas(resMot.motoristas);
-      if (resInd.indicadores) setIndicadores(resInd.indicadores);
+      if (resCar.success && resCar.data?.cargas) setCargas(resCar.data.cargas);
+      if (resTra.success && resTra.data?.transportadoras) setTransportadoras(resTra.data.transportadoras);
+      if (resTab.success && resTab.data?.tabelasFrete) setTabelasFrete(resTab.data.tabelasFrete);
+      if (resVei.success && resVei.data?.veiculos) setVeiculos(resVei.data.veiculos);
+      if (resMot.success && resMot.data?.motoristas) setMotoristas(resMot.data.motoristas);
+      if (resInd.success && resInd.data?.indicadores) setIndicadores(resInd.data.indicadores);
     } catch (err) {
       console.error('Erro ao carregar dados da expedição:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [empresaAtiva.id]);
 
   useEffect(() => {
-    let ignore = false;
-    async function load() {
-      try {
-        setLoading(true);
-        const [resExp, resCar, resTra, resTab, resVei, resMot, resInd] = await Promise.all([
-          fetch('/api/v1/expedicao?tipo=expedicoes', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=cargas', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=transportadoras', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=tabelas_frete', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=veiculos', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=motoristas', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-          fetch('/api/v1/expedicao?tipo=indicadores_otif', { headers: { 'x-empresa-id': empresaAtiva.id } }).then((r) => r.json()),
-        ]);
-
-        if (!ignore) {
-          if (resExp.expedicoes) {
-            setExpedicoes(resExp.expedicoes);
-            if (resExp.expedicoes.length > 0) {
-              setSelectedExpedicao((prev) => prev || resExp.expedicoes[0]);
-            }
-          }
-          if (resCar.cargas) setCargas(resCar.cargas);
-          if (resTra.transportadoras) setTransportadoras(resTra.transportadoras);
-          if (resTab.tabelasFrete) setTabelasFrete(resTab.tabelasFrete);
-          if (resVei.veiculos) setVeiculos(resVei.veiculos);
-          if (resMot.motoristas) setMotoristas(resMot.motoristas);
-          if (resInd.indicadores) setIndicadores(resInd.indicadores);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados da expedição:', err);
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    load();
-
-    return () => {
-      ignore = true;
-    };
-  }, [empresaAtiva.id]);
+    carregarDados();
+  }, [carregarDados]);
 
   const executarAcao = async (acao: string, payload: any) => {
     try {
-      const res = await fetch('/api/v1/expedicao', {
+      const res = await safeFetchJson<{ expedicao?: Expedicao }>('/api/v1/expedicao', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,11 +157,10 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
         },
         body: JSON.stringify({ acao, payload }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         await carregarDados();
-        if (data.expedicao) {
-          setSelectedExpedicao(data.expedicao);
+        if (res.data?.expedicao) {
+          setSelectedExpedicao(res.data.expedicao);
         }
         return true;
       }
@@ -222,12 +181,11 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
         valorMercadorias: simValor.toString(),
         ufDestino: simUF,
       });
-      const res = await fetch(`/api/v1/expedicao?${params.toString()}`, {
+      const res = await safeFetchJson<{ frete: any }>(`/api/v1/expedicao?${params.toString()}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.frete) {
-        setSimResultado(data.frete);
+      if (res.success && res.data?.frete) {
+        setSimResultado(res.data.frete);
       }
     } catch (e) {
       console.error(e);

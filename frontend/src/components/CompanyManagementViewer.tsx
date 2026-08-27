@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { EmpresaRecord, RegimeTributario } from '../../../backend/modules/multi-tenant/types';
 import { formatCnpj, isValidCnpj } from '../../../backend/modules/multi-tenant/cnpj-validator';
+import { safeFetchJson } from '../api/safe-fetch';
 
 export function CompanyManagementViewer() {
   const [companies, setCompanies] = useState<EmpresaRecord[]>([]);
@@ -43,10 +44,9 @@ export function CompanyManagementViewer() {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/empresas?limit=100');
-      const data = await res.json();
-      if (data.success && data.items) {
-        setCompanies(data.items);
+      const res = await safeFetchJson<{ items: EmpresaRecord[] }>('/api/v1/admin/empresas?limit=100');
+      if (res.success && res.data?.items) {
+        setCompanies(res.data.items);
       }
     } catch (err) {
       console.error('Falha ao carregar empresas:', err);
@@ -56,37 +56,17 @@ export function CompanyManagementViewer() {
   };
 
   useEffect(() => {
-    let ignore = false;
-    async function load() {
-      try {
-        const res = await fetch('/api/v1/admin/empresas?limit=100');
-        const data = await res.json();
-        if (!ignore && data.success && data.items) {
-          setCompanies(data.items);
-        }
-      } catch (err) {
-        console.error('Falha ao carregar empresas:', err);
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      ignore = true;
-    };
+    fetchCompanies();
   }, []);
 
   const handleToggleStatus = async (id: string, name: string) => {
     try {
-      const res = await fetch(`/api/v1/admin/empresas/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
+      const res = await safeFetchJson(`/api/v1/admin/empresas/${id}`, { method: 'DELETE' });
+      if (res.success) {
         setStatusMessage({ type: 'success', text: `Status de '${name}' alterado com sucesso.` });
         fetchCompanies();
       } else {
-        setStatusMessage({ type: 'error', text: data.error?.message || 'Falha ao alterar status.' });
+        setStatusMessage({ type: 'error', text: res.error || 'Falha ao alterar status.' });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'Erro de conexão.' });
@@ -104,15 +84,14 @@ export function CompanyManagementViewer() {
     }
 
     try {
-      const res = await fetch('/api/v1/admin/empresas', {
+      const res = await safeFetchJson<{ message?: string }>('/api/v1/admin/empresas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
 
-      if (data.success) {
-        setStatusMessage({ type: 'success', text: data.message });
+      if (res.success) {
+        setStatusMessage({ type: 'success', text: res.data?.message || 'Empresa criada com sucesso' });
         setShowModal(false);
         setFormData({
           codigo: '',
@@ -127,10 +106,10 @@ export function CompanyManagementViewer() {
         });
         fetchCompanies();
       } else {
-        setStatusMessage({ type: 'error', text: data.error?.message || 'Falha ao criar empresa.' });
+        setStatusMessage({ type: 'error', text: res.error || 'Erro ao criar empresa.' });
       }
     } catch (err: any) {
-      setStatusMessage({ type: 'error', text: err.message || 'Erro ao comunicar com o servidor.' });
+      setStatusMessage({ type: 'error', text: err.message || 'Erro de conexão.' });
     }
   };
 

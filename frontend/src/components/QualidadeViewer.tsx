@@ -46,6 +46,7 @@ import {
   CategoriaIshikawa,
 } from '@/backend/modules/qualidade/qualidade-types';
 import { Empresa } from '@/backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface QualidadeViewerProps {
   empresaAtiva: Empresa;
@@ -130,22 +131,31 @@ export function QualidadeViewer({ empresaAtiva }: QualidadeViewerProps) {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/qualidade?empresaId=${empresaAtiva.id}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setIndicadores(json.data.indicadores);
-        setInspecoes(json.data.inspecoes || []);
-        setRncs(json.data.naoConformidades || []);
-        setRetrabalhos(json.data.retrabalhos || []);
-        setRefugos(json.data.refugos || []);
-        setChecklists(json.data.modelosChecklist || []);
+      const res = await safeFetchJson<{
+        indicadores: IndicadoresQualidade;
+        inspecoes: InspecaoQualidade[];
+        naoConformidades: NaoConformidade[];
+        retrabalhos: RetrabalhoQualidade[];
+        refugos: RefugoQualidade[];
+        modelosChecklist: ModeloChecklist[];
+      }>(`/api/v1/qualidade?empresaId=${empresaAtiva.id}`);
 
-        if (json.data.inspecoes?.length > 0 && !inspecaoSelecionada) {
-          setInspecaoSelecionada(json.data.inspecoes[0]);
+      if (res.success && res.data) {
+        if (res.data.indicadores) setIndicadores(res.data.indicadores);
+        setInspecoes(res.data.inspecoes || []);
+        setRncs(res.data.naoConformidades || []);
+        setRetrabalhos(res.data.retrabalhos || []);
+        setRefugos(res.data.refugos || []);
+        setChecklists(res.data.modelosChecklist || []);
+
+        if (res.data.inspecoes?.length > 0 && !inspecaoSelecionada) {
+          setInspecaoSelecionada(res.data.inspecoes[0]);
         }
-        if (json.data.naoConformidades?.length > 0 && !rncSelecionada) {
-          setRncSelecionada(json.data.naoConformidades[0]);
+        if (res.data.naoConformidades?.length > 0 && !rncSelecionada) {
+          setRncSelecionada(res.data.naoConformidades[0]);
         }
+      } else if (res.error) {
+        setFeedback({ tipo: 'error', texto: res.error });
       }
     } catch (e: any) {
       setFeedback({ tipo: 'error', texto: `Erro ao carregar módulo de qualidade: ${e.message}` });
@@ -155,41 +165,7 @@ export function QualidadeViewer({ empresaAtiva }: QualidadeViewerProps) {
   };
 
   useEffect(() => {
-    let ignore = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/v1/qualidade?empresaId=${empresaAtiva.id}`);
-        const json = await res.json();
-        if (!ignore && json.success && json.data) {
-          setIndicadores(json.data.indicadores);
-          setInspecoes(json.data.inspecoes || []);
-          setRncs(json.data.naoConformidades || []);
-          setRetrabalhos(json.data.retrabalhos || []);
-          setRefugos(json.data.refugos || []);
-          setChecklists(json.data.modelosChecklist || []);
-
-          if (json.data.inspecoes?.length > 0) {
-            setInspecaoSelecionada((prev) => prev || json.data.inspecoes[0]);
-          }
-          if (json.data.naoConformidades?.length > 0) {
-            setRncSelecionada((prev) => prev || json.data.naoConformidades[0]);
-          }
-        }
-      } catch (e: any) {
-        if (!ignore) {
-          setFeedback({ tipo: 'error', texto: `Erro ao carregar módulo de qualidade: ${e.message}` });
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      ignore = true;
-    };
+    carregarDados();
   }, [empresaAtiva.id]);
 
   const handleRegistrarInspecao = async (e: React.FormEvent) => {

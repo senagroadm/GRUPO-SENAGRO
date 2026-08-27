@@ -35,6 +35,7 @@ import {
   ResumoMotorCustos,
 } from '@/backend/modules/custos/custos-types';
 import { OrdemProducaoCompleta } from '@/backend/modules/producao/producao-types';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface MotorCustosViewerProps {
   empresaId: string;
@@ -64,18 +65,19 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
   const carregarDadosGerais = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=resumo`);
-      const data = await res.json();
-      if (data.success) {
-        setResumo(data.resumo);
-        setVigenciaAtiva(data.vigenciaAtiva);
-        setFormVigencia(data.vigenciaAtiva || {});
+      const [resResumo, resVig] = await Promise.all([
+        safeFetchJson<{ resumo: ResumoMotorCustos; vigenciaAtiva: ParametroCustoVigencia }>(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=resumo`),
+        safeFetchJson<{ vigencias: ParametroCustoVigencia[] }>(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=vigencias`),
+      ]);
+
+      if (resResumo.success && resResumo.data) {
+        setResumo(resResumo.data.resumo);
+        setVigenciaAtiva(resResumo.data.vigenciaAtiva);
+        setFormVigencia(resResumo.data.vigenciaAtiva || {});
       }
 
-      const resVig = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=vigencias`);
-      const dataVig = await resVig.json();
-      if (dataVig.success) {
-        setTodasVigencias(dataVig.vigencias || []);
+      if (resVig.success && resVig.data) {
+        setTodasVigencias(resVig.data.vigencias || []);
       }
     } catch (e) {
       console.error('Erro ao carregar dados do motor de custos:', e);
@@ -87,10 +89,9 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
   const carregarAnaliseOP = async (id: string) => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=op&id=${id}`);
-      const data = await res.json();
-      if (data.success) {
-        setAnaliseOpAtual(data.data);
+      const res = await safeFetchJson<{ data: AnaliseCustoOP }>(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=op&id=${id}`);
+      if (res.success && res.data) {
+        setAnaliseOpAtual(res.data.data);
       }
     } catch (e) {
       console.error('Erro ao carregar análise de custo da OP:', e);
@@ -99,10 +100,9 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
 
   const carregarAnalisePedido = async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=pedido&id=${id || 'ped-01'}`);
-      const data = await res.json();
-      if (data.success) {
-        setAnalisePedidoAtual(data.data);
+      const res = await safeFetchJson<{ data: AnaliseCustoPedido }>(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=pedido&id=${id || 'ped-01'}`);
+      if (res.success && res.data) {
+        setAnalisePedidoAtual(res.data.data);
       }
     } catch (e) {
       console.error('Erro ao carregar análise de custo do Pedido:', e);
@@ -111,10 +111,9 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
 
   const carregarAnaliseProduto = async (codigo: string) => {
     try {
-      const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=produto&id=${codigo}`);
-      const data = await res.json();
-      if (data.success) {
-        setAnaliseProdutoAtual(data.data);
+      const res = await safeFetchJson<{ data: AnaliseCustoProduto }>(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=produto&id=${codigo}`);
+      if (res.success && res.data) {
+        setAnaliseProdutoAtual(res.data.data);
       }
     } catch (e) {
       console.error('Erro ao carregar análise de custo do Produto:', e);
@@ -122,88 +121,27 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
   };
 
   useEffect(() => {
-    let ignore = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=resumo`);
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setResumo(data.resumo);
-          setVigenciaAtiva(data.vigenciaAtiva);
-          setFormVigencia(data.vigenciaAtiva || {});
-        }
-
-        const resVig = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=vigencias`);
-        const dataVig = await resVig.json();
-        if (!ignore && dataVig.success) {
-          setTodasVigencias(dataVig.vigencias || []);
-        }
-      } catch (e) {
-        console.error('Erro ao carregar dados do motor de custos:', e);
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      ignore = true;
-    };
+    carregarDadosGerais();
   }, [empresaId]);
 
   useEffect(() => {
-    let ignore = false;
-    async function loadOP() {
-      if (!opSelecionadaId) return;
-      try {
-        const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=op&id=${opSelecionadaId}`);
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setAnaliseOpAtual(data.data);
-        }
-      } catch (e) {
-        console.error('Erro ao carregar análise de custo da OP:', e);
-      }
+    if (opSelecionadaId) {
+      carregarAnaliseOP(opSelecionadaId);
     }
-    loadOP();
-    return () => {
-      ignore = true;
-    };
   }, [opSelecionadaId, empresaId]);
 
   useEffect(() => {
-    let ignore = false;
-    async function loadSubTab() {
-      try {
-        if (subTab === 'por_pedido') {
-          const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=pedido&id=ped-01`);
-          const data = await res.json();
-          if (!ignore && data.success) {
-            setAnalisePedidoAtual(data.data);
-          }
-        } else if (subTab === 'por_produto') {
-          const res = await fetch(`/api/v1/producao/custos-motor?empresaId=${empresaId}&tipo=produto&id=${produtoCodigoSelecionado}`);
-          const data = await res.json();
-          if (!ignore && data.success) {
-            setAnaliseProdutoAtual(data.data);
-          }
-        }
-      } catch (e) {
-        console.error('Erro ao carregar análise de subtab:', e);
-      }
+    if (subTab === 'por_pedido') {
+      carregarAnalisePedido('ped-01');
+    } else if (subTab === 'por_produto' && produtoCodigoSelecionado) {
+      carregarAnaliseProduto(produtoCodigoSelecionado);
     }
-    loadSubTab();
-    return () => {
-      ignore = true;
-    };
   }, [subTab, produtoCodigoSelecionado, empresaId]);
 
   const handleSalvarVigencia = async () => {
     setSalvandoVigencia(true);
     try {
-      const res = await fetch('/api/v1/producao/custos-motor', {
+      const res = await safeFetchJson<{ data: ParametroCustoVigencia }>('/api/v1/producao/custos-motor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,9 +149,8 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
         },
         body: JSON.stringify(formVigencia),
       });
-      const data = await res.json();
-      if (data.success) {
-        setVigenciaAtiva(data.data);
+      if (res.success && res.data?.data) {
+        setVigenciaAtiva(res.data.data);
         setEditandoVigencia(false);
         await carregarDadosGerais();
         if (opSelecionadaId) carregarAnaliseOP(opSelecionadaId);

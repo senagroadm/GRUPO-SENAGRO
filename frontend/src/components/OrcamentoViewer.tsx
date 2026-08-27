@@ -42,6 +42,7 @@ import {
   Info,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   Orcamento,
   OrcamentoItem,
@@ -171,13 +172,12 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
   const carregarOrcamentos = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/orcamentos?empresaId=${empresaAtiva.id}`, {
+      const res = await safeFetchJson<{ data: Orcamento[]; kpis: any }>(`/api/v1/orcamentos?empresaId=${empresaAtiva.id}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setOrcamentos(data.data || []);
-        if (data.kpis) setKpis(data.kpis);
+      if (res.success && res.data) {
+        setOrcamentos(res.data.data || []);
+        if (res.data.kpis) setKpis(res.data.kpis);
       }
     } catch (err) {
       console.error('Erro ao carregar orçamentos:', err);
@@ -188,12 +188,11 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
 
   const carregarParametrosCusto = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/orcamentos/parametros-custo?empresaId=${empresaAtiva.id}`, {
+      const res = await safeFetchJson<{ data: any }>(`/api/v1/orcamentos/parametros-custo?empresaId=${empresaAtiva.id}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setParametrosCusto(data.data);
+      if (res.success && res.data?.data) {
+        setParametrosCusto(res.data.data);
       }
     } catch (err) {
       console.error('Erro ao carregar parâmetros de custo:', err);
@@ -277,14 +276,13 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
         }
       }
 
-      const res = await fetch('/api/v1/orcamentos/simular-custo', {
+      const res = await safeFetchJson<{ data: any }>('/api/v1/orcamentos/simular-custo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(bodyPayload),
       });
-      const data = await res.json();
-      if (data.success) {
-        setItemSimuladoComposicao(data.data);
+      if (res.success && res.data?.data) {
+        setItemSimuladoComposicao(res.data.data);
       }
     } catch (err) {
       console.error('Erro na simulação do item:', err);
@@ -416,13 +414,12 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
         itens: formItens,
       };
 
-      const res = await fetch('/api/v1/orcamentos', {
+      const res = await safeFetchJson<{ error?: string }>('/api/v1/orcamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         alert('Orçamento criado com sucesso!');
         setFormItens([]);
         setFormTitulo('');
@@ -430,7 +427,7 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
         setActiveTab('lista');
         carregarOrcamentos();
       } else {
-        alert(`Erro: ${data.error}`);
+        alert(`Erro: ${res.error || 'Falha ao salvar orçamento'}`);
       }
     } catch (err) {
       console.error('Erro ao salvar orçamento:', err);
@@ -440,14 +437,16 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
 
   const handleAbrirDetalhes = async (orc: Orcamento) => {
     try {
-      const res = await fetch(`/api/v1/orcamentos/${orc.id}`, {
+      const res = await safeFetchJson<{ data: any }>(`/api/v1/orcamentos/${orc.id}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedOrcamento(data.data);
-        setSelectedVersoes(data.data.versoes || []);
-        setSelectedHistorico(data.data.historico || []);
+      if (res.success && res.data?.data) {
+        setSelectedOrcamento(res.data.data);
+        setSelectedVersoes(res.data.data.versoes || []);
+        setSelectedHistorico(res.data.data.historico || []);
+        setActiveTab('proposta');
+      } else {
+        setSelectedOrcamento(orc);
         setActiveTab('proposta');
       }
     } catch (err) {
@@ -463,7 +462,7 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
       return;
     }
     try {
-      const res = await fetch(`/api/v1/orcamentos/${selectedOrcamento.id}/aprovar`, {
+      const res = await safeFetchJson(`/api/v1/orcamentos/${selectedOrcamento.id}/aprovar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({
@@ -471,8 +470,7 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
           justificativa: aprovacaoJustificativa,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         alert(`Orçamento ${aprovacaoAcao === 'APROVAR' ? 'aprovado' : 'rejeitado'} com sucesso!`);
         setAprovacaoModalOpen(false);
         setAprovacaoJustificativa('');
@@ -492,13 +490,12 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
     setSavingParametros(true);
     setParamSuccessMessage(null);
     try {
-      const res = await fetch('/api/v1/orcamentos/parametros-custo', {
+      const res = await safeFetchJson('/api/v1/orcamentos/parametros-custo', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(parametrosCusto),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setParamSuccessMessage('Parâmetros de custos industriais e alçadas atualizados com sucesso!');
         setTimeout(() => setParamSuccessMessage(null), 4000);
       }

@@ -32,6 +32,7 @@ import {
   AlgoritmoSequenciamento,
   ItemFilaProducao,
 } from '@/backend/modules/pcp/pcp-types';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface PcpViewerProps {
   empresaId: string;
@@ -56,17 +57,20 @@ export function PcpViewer({ empresaId }: PcpViewerProps) {
   const carregarDadosPcp = useCallback(async () => {
     setLoading(true);
     try {
-      const resMrp = await fetch(`/api/v1/pcp/mrp/calcular?empresaId=${empresaId}`);
-      const jsonMrp = await resMrp.json();
-      if (jsonMrp.success && jsonMrp.data) {
-        setMrpResult(jsonMrp.data);
+      const [resMrp, resPcp] = await Promise.all([
+        safeFetchJson<{ data: ResultadoCalculoMRP }>(`/api/v1/pcp/mrp/calcular?empresaId=${empresaId}`),
+        safeFetchJson<{ ordensProducao: OrdemProducao[]; maquinas: CentroTrabalhoMaquina[] }>(`/api/v1/pcp?empresaId=${empresaId}`),
+      ]);
+
+      if (resMrp.success && resMrp.data?.data) {
+        setMrpResult(resMrp.data.data);
+      } else if (resMrp.success && (resMrp.data as any)?.necessidadesMateriais) {
+        setMrpResult(resMrp.data as any);
       }
 
-      const resPcp = await fetch(`/api/v1/pcp?empresaId=${empresaId}`);
-      const jsonPcp = await resPcp.json();
-      if (jsonPcp.success) {
-        setOrdensProducao(jsonPcp.ordensProducao || []);
-        setMaquinas(jsonPcp.maquinas || []);
+      if (resPcp.success && resPcp.data) {
+        setOrdensProducao(resPcp.data.ordensProducao || []);
+        setMaquinas(resPcp.data.maquinas || []);
       }
     } catch (err: any) {
       console.error('Erro ao carregar dados de PCP:', err);
@@ -77,10 +81,9 @@ export function PcpViewer({ empresaId }: PcpViewerProps) {
 
   const carregarFilaMaquina = useCallback(async (maqId: string, alg: AlgoritmoSequenciamento) => {
     try {
-      const res = await fetch(`/api/v1/pcp/fila?empresaId=${empresaId}&maquinaId=${maqId}&algoritmo=${alg}`);
-      const json = await res.json();
-      if (json.success && json.fila) {
-        setFilaMaquina(json.fila);
+      const res = await safeFetchJson<{ fila: ItemFilaProducao[] }>(`/api/v1/pcp/fila?empresaId=${empresaId}&maquinaId=${maqId}&algoritmo=${alg}`);
+      if (res.success && res.data?.fila) {
+        setFilaMaquina(res.data.fila);
       }
     } catch (err: any) {
       console.error('Erro ao carregar fila:', err);
@@ -88,51 +91,13 @@ export function PcpViewer({ empresaId }: PcpViewerProps) {
   }, [empresaId]);
 
   useEffect(() => {
-    let ignore = false;
-    async function init() {
-      try {
-        const [resMrp, resPcp] = await Promise.all([
-          fetch(`/api/v1/pcp/mrp/calcular?empresaId=${empresaId}`).then((r) => r.json()),
-          fetch(`/api/v1/pcp?empresaId=${empresaId}`).then((r) => r.json()),
-        ]);
-        if (!ignore) {
-          if (resMrp.success && resMrp.data) setMrpResult(resMrp.data);
-          if (resPcp.success) {
-            setOrdensProducao(resPcp.ordensProducao || []);
-            setMaquinas(resPcp.maquinas || []);
-          }
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados de PCP:', err);
-        if (!ignore) setLoading(false);
-      }
-    }
-    init();
-    return () => {
-      ignore = true;
-    };
-  }, [empresaId]);
+    carregarDadosPcp();
+  }, [carregarDadosPcp]);
 
   useEffect(() => {
-    let ignore = false;
     if (!maquinaFilaSelecionada) return;
-    async function loadFila() {
-      try {
-        const res = await fetch(`/api/v1/pcp/fila?empresaId=${empresaId}&maquinaId=${maquinaFilaSelecionada}&algoritmo=${algoritmoFila}`);
-        const json = await res.json();
-        if (!ignore && json.success && json.fila) {
-          setFilaMaquina(json.fila);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar fila:', err);
-      }
-    }
-    loadFila();
-    return () => {
-      ignore = true;
-    };
-  }, [empresaId, maquinaFilaSelecionada, algoritmoFila]);
+    carregarFilaMaquina(maquinaFilaSelecionada, algoritmoFila);
+  }, [empresaId, maquinaFilaSelecionada, algoritmoFila, carregarFilaMaquina]);
 
   const handleRecalcularMRP = async () => {
     setCalculandoMrp(true);

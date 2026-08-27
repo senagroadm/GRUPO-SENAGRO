@@ -28,6 +28,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface ArquivoItem {
   id: string;
@@ -104,12 +105,11 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
       if (selectedCategoria !== 'TODAS') params.append('categoria', selectedCategoria);
       if (searchTerm) params.append('busca', searchTerm);
 
-      const res = await fetch(`/api/v1/arquivos?${params.toString()}`, {
+      const res = await safeFetchJson<{ data: ArquivoItem[] }>(`/api/v1/arquivos?${params.toString()}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setArquivos(data.data || []);
+      if (res.success && res.data) {
+        setArquivos(res.data.data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar arquivos:', err);
@@ -120,12 +120,11 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
 
   const fetchLogs = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/arquivos/logs?empresaId=${empresaAtiva.id}`, {
+      const res = await safeFetchJson<{ data: any[] }>(`/api/v1/arquivos/logs?empresaId=${empresaAtiva.id}`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setLogs(data.data || []);
+      if (res.success && res.data) {
+        setLogs(res.data.data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar logs:', err);
@@ -156,7 +155,7 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
     if (!uploadFileName) return;
 
     try {
-      const res = await fetch('/api/v1/arquivos', {
+      const res = await safeFetchJson('/api/v1/arquivos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,8 +172,7 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
           content: uploadFileContent || `Conteúdo industrial gerado para ${uploadFileName} em ${new Date().toISOString()}`,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowUploadModal(false);
         setUploadFileName('');
         setUploadDescricao('');
@@ -192,7 +190,7 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
     if (!versionTarget) return;
 
     try {
-      const res = await fetch(`/api/v1/arquivos/${versionTarget.id}/versao`, {
+      const res = await safeFetchJson(`/api/v1/arquivos/${versionTarget.id}/versao`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,8 +202,7 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
           content: versionContent || `Conteúdo revisado da versão ${versionTarget.versao + 1} de ${versionTarget.nomeOriginal}`,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setVersionTarget(null);
         setVersionDesc('');
         setVersionContent('');
@@ -221,12 +218,11 @@ export function FileManagementViewer({ empresaAtiva }: { empresaAtiva: Empresa }
     setPreviewArquivo(arquivo);
     setPreviewLoading(true);
     try {
-      const res = await fetch(`/api/v1/arquivos/${arquivo.id}/preview?format=json`, {
+      const res = await safeFetchJson<{ data: { previewText?: string } }>(`/api/v1/arquivos/${arquivo.id}/preview?format=json`, {
         headers: { 'x-empresa-id': empresaAtiva.id },
       });
-      const data = await res.json();
-      if (data.success) {
-        setPreviewContent(data.data.previewText || `Visualização do arquivo ${arquivo.nomeOriginal}`);
+      if (res.success && res.data?.data) {
+        setPreviewContent(res.data.data.previewText || `Visualização do arquivo ${arquivo.nomeOriginal}`);
       }
     } catch (err) {
       console.error('Erro ao carregar preview:', err);

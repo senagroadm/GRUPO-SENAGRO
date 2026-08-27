@@ -41,6 +41,7 @@ import {
   TipoInstrumentoCalibracao,
 } from '@/backend/modules/patrimonio/patrimonio-types';
 import { Empresa } from '@/backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface PatrimonioViewerProps {
   empresaAtiva: Empresa;
@@ -171,23 +172,30 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/patrimonio?empresaId=${empresaAtiva.id}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setIndicadores(json.data.indicadores);
-        setAtivos(json.data.ativos || []);
-        setFerramentas(json.data.ferramentas || []);
-        setInstrumentos(json.data.instrumentos || []);
+      const res = await safeFetchJson<{
+        indicadores: IndicadoresPatrimonioCalibracao;
+        ativos: AtivoPatrimonial[];
+        ferramentas: FerramentaControle[];
+        instrumentos: InstrumentoCalibracao[];
+      }>(`/api/v1/patrimonio?empresaId=${empresaAtiva.id}`);
 
-        if (json.data.ativos?.length > 0 && !ativoSelecionado) {
-          setAtivoSelecionado(json.data.ativos[0]);
+      if (res.success && res.data) {
+        if (res.data.indicadores) setIndicadores(res.data.indicadores);
+        setAtivos(res.data.ativos || []);
+        setFerramentas(res.data.ferramentas || []);
+        setInstrumentos(res.data.instrumentos || []);
+
+        if (res.data.ativos?.length > 0 && !ativoSelecionado) {
+          setAtivoSelecionado(res.data.ativos[0]);
         }
-        if (json.data.ferramentas?.length > 0 && !ferramentaSelecionada) {
-          setFerramentaSelecionada(json.data.ferramentas[0]);
+        if (res.data.ferramentas?.length > 0 && !ferramentaSelecionada) {
+          setFerramentaSelecionada(res.data.ferramentas[0]);
         }
-        if (json.data.instrumentos?.length > 0 && !instrumentoSelecionado) {
-          setInstrumentoSelecionado(json.data.instrumentos[0]);
+        if (res.data.instrumentos?.length > 0 && !instrumentoSelecionado) {
+          setInstrumentoSelecionado(res.data.instrumentos[0]);
         }
+      } else if (res.error) {
+        setFeedback({ tipo: 'error', texto: res.error });
       }
     } catch (e: any) {
       setFeedback({ tipo: 'error', texto: `Erro ao carregar dados: ${e.message}` });
@@ -201,16 +209,23 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/v1/patrimonio?empresaId=${empresaAtiva.id}`);
-        const json = await res.json();
-        if (!ignore && json.success && json.data) {
-          setIndicadores(json.data.indicadores);
-          setAtivos(json.data.ativos || []);
-          setFerramentas(json.data.ferramentas || []);
-          setInstrumentos(json.data.instrumentos || []);
-          if (json.data.ativos?.length > 0) setAtivoSelecionado((prev) => prev || json.data.ativos[0]);
-          if (json.data.ferramentas?.length > 0) setFerramentaSelecionada((prev) => prev || json.data.ferramentas[0]);
-          if (json.data.instrumentos?.length > 0) setInstrumentoSelecionado((prev) => prev || json.data.instrumentos[0]);
+        const res = await safeFetchJson<{
+          indicadores: IndicadoresPatrimonioCalibracao;
+          ativos: AtivoPatrimonial[];
+          ferramentas: FerramentaControle[];
+          instrumentos: InstrumentoCalibracao[];
+        }>(`/api/v1/patrimonio?empresaId=${empresaAtiva.id}`);
+
+        if (!ignore && res.success && res.data) {
+          if (res.data.indicadores) setIndicadores(res.data.indicadores);
+          setAtivos(res.data.ativos || []);
+          setFerramentas(res.data.ferramentas || []);
+          setInstrumentos(res.data.instrumentos || []);
+          if (res.data.ativos?.length > 0) setAtivoSelecionado((prev) => prev || res.data!.ativos[0]);
+          if (res.data.ferramentas?.length > 0) setFerramentaSelecionada((prev) => prev || res.data!.ferramentas[0]);
+          if (res.data.instrumentos?.length > 0) setInstrumentoSelecionado((prev) => prev || res.data!.instrumentos[0]);
+        } else if (!ignore && res.error) {
+          // Silent fallback or non-disruptive feedback
         }
       } catch (e: any) {
         if (!ignore) setFeedback({ tipo: 'error', texto: e.message });
@@ -226,18 +241,17 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
 
   const handleApiAction = async (acao: string, payload: any, successMsg: string, closeModal?: () => void) => {
     try {
-      const res = await fetch('/api/v1/patrimonio', {
+      const res = await safeFetchJson('/api/v1/patrimonio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ acao, empresaId: empresaAtiva.id, payload }),
       });
-      const json = await res.json();
-      if (json.success) {
+      if (res.success) {
         setFeedback({ tipo: 'success', texto: successMsg });
         if (closeModal) closeModal();
         carregarDados();
       } else {
-        setFeedback({ tipo: 'error', texto: json.error || 'Erro na operação.' });
+        setFeedback({ tipo: 'error', texto: res.error || 'Erro na operação.' });
       }
     } catch (e: any) {
       setFeedback({ tipo: 'error', texto: e.message });

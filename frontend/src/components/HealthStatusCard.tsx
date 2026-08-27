@@ -5,7 +5,7 @@ import { Activity, Database, Server, RefreshCw, Cpu, HardDrive } from 'lucide-re
 import { useHealth } from '../hooks/use-health';
 
 export function HealthStatusCard() {
-  const { data, loading, error, refetch } = useHealth(15000);
+  const { data, loading, error, refetch } = useHealth(60000);
 
   const isHealthy = data?.status === 'pass';
   const isDbHealthy = data?.checks?.database?.status === 'healthy';

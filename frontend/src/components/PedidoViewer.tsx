@@ -40,6 +40,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   PedidoVenda,
   StatusPedido,
@@ -115,10 +116,10 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
 
   const carregarPedidos = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/pedidos?empresaId=${empresaAtiva.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setPedidos(data.data);
+      setLoading(true);
+      const res = await safeFetchJson<{ data: PedidoVenda[] }>(`/api/v1/pedidos?empresaId=${empresaAtiva.id}`);
+      if (res.success && res.data) {
+        setPedidos(res.data.data || []);
       }
     } catch (err: any) {
       console.error('Erro ao carregar pedidos:', err);
@@ -128,33 +129,15 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
   }, [empresaAtiva.id]);
 
   useEffect(() => {
-    let ignore = false;
-    async function fetchData() {
-      try {
-        const res = await fetch(`/api/v1/pedidos?empresaId=${empresaAtiva.id}`);
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setPedidos(data.data);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar pedidos:', err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-    fetchData();
-    return () => {
-      ignore = true;
-    };
-  }, [empresaAtiva.id]);
+    carregarPedidos();
+  }, [carregarPedidos]);
 
   const carregarOrcamentosParaConversao = async () => {
     try {
       setLoadingOrcamentos(true);
-      const res = await fetch(`/api/v1/orcamento?empresaId=${empresaAtiva.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setOrcamentosDisponiveis(data.data || []);
+      const res = await safeFetchJson<{ data: any[] }>(`/api/v1/orcamento?empresaId=${empresaAtiva.id}`);
+      if (res.success && res.data) {
+        setOrcamentosDisponiveis(res.data.data || []);
       }
     } catch (err) {
       console.error('Erro ao carregar orçamentos:', err);
@@ -169,7 +152,7 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
       return;
     }
     try {
-      const res = await fetch('/api/v1/pedidos/converter-orcamento', {
+      const res = await safeFetchJson<{ message?: string; data?: PedidoVenda }>('/api/v1/pedidos/converter-orcamento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -180,14 +163,13 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
           usuarioCargo: 'GERENTE_COMERCIAL',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showFeedback('success', data.message);
-        setSelectedPedido(data.data);
+      if (res.success && res.data) {
+        showFeedback('success', res.data.message || 'Orçamento convertido com sucesso');
+        if (res.data.data) setSelectedPedido(res.data.data);
         setActiveTab('detalhes');
         carregarPedidos();
       } else {
-        showFeedback('error', data.error || 'Erro ao converter orçamento.');
+        showFeedback('error', res.error || 'Erro ao converter orçamento.');
       }
     } catch (err: any) {
       showFeedback('error', err?.message || 'Falha na requisição.');
@@ -201,7 +183,7 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
       return;
     }
     try {
-      const res = await fetch('/api/v1/pedidos', {
+      const res = await safeFetchJson<{ message?: string; data?: PedidoVenda }>('/api/v1/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,14 +197,13 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
           itens: formItens,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showFeedback('success', data.message);
-        setSelectedPedido(data.data);
+      if (res.success && res.data) {
+        showFeedback('success', res.data.message || 'Pedido criado com sucesso');
+        if (res.data.data) setSelectedPedido(res.data.data);
         setActiveTab('detalhes');
         carregarPedidos();
       } else {
-        showFeedback('error', data.error || 'Erro ao criar pedido.');
+        showFeedback('error', res.error || 'Erro ao criar pedido.');
       }
     } catch (err: any) {
       showFeedback('error', err?.message || 'Erro na requisição.');
@@ -232,7 +213,7 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
   const handleTransicionarStatus = async (novoStatus: StatusPedido) => {
     if (!selectedPedido) return;
     try {
-      const res = await fetch(`/api/v1/pedidos/${selectedPedido.id}/transicionar`, {
+      const res = await safeFetchJson<{ message?: string; data?: PedidoVenda }>(`/api/v1/pedidos/${selectedPedido.id}/transicionar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -242,13 +223,12 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
           usuarioNome: 'Operador PCP / Diretor',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showFeedback('success', data.message);
-        setSelectedPedido(data.data);
+      if (res.success && res.data) {
+        showFeedback('success', res.data.message || 'Status transicionado com sucesso');
+        if (res.data.data) setSelectedPedido(res.data.data);
         carregarPedidos();
       } else {
-        showFeedback('error', data.error || 'Transição proibida pela máquina de estados.');
+        showFeedback('error', res.error || 'Transição proibida pela máquina de estados.');
       }
     } catch (err: any) {
       showFeedback('error', err?.message || 'Erro ao transicionar status.');
@@ -258,7 +238,7 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
   const handleDecidirAprovacao = async (aprovacaoId: string, aprovado: boolean) => {
     if (!selectedPedido) return;
     try {
-      const res = await fetch(`/api/v1/pedidos/${selectedPedido.id}/aprovacoes`, {
+      const res = await safeFetchJson<{ message?: string; data?: PedidoVenda }>(`/api/v1/pedidos/${selectedPedido.id}/aprovacoes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -270,13 +250,12 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
           usuarioId: 'usr-diretor',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showFeedback('success', data.message);
-        setSelectedPedido(data.data);
+      if (res.success && res.data) {
+        showFeedback('success', res.data.message || 'Decisão de aprovação registrada');
+        if (res.data.data) setSelectedPedido(res.data.data);
         carregarPedidos();
       } else {
-        showFeedback('error', data.error || 'Erro ao processar aprovação.');
+        showFeedback('error', res.error || 'Erro ao processar aprovação.');
       }
     } catch (err: any) {
       showFeedback('error', err?.message || 'Falha na aprovação.');
@@ -286,7 +265,7 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
   const handleAplicarAlteracaoCritica = async () => {
     if (!selectedPedido) return;
     try {
-      const res = await fetch(`/api/v1/pedidos/${selectedPedido.id}`, {
+      const res = await safeFetchJson<{ message?: string; data?: PedidoVenda }>(`/api/v1/pedidos/${selectedPedido.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -298,14 +277,13 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
           usuarioCargo: 'GERENTE_COMERCIAL',
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        showFeedback('success', data.message);
-        setSelectedPedido(data.data);
+      if (res.success && res.data) {
+        showFeedback('success', res.data.message || 'Alteração realizada');
+        if (res.data.data) setSelectedPedido(res.data.data);
         setModalAlteracaoAberta(false);
         carregarPedidos();
       } else {
-        showFeedback('error', data.error || 'Erro ao alterar pedido.');
+        showFeedback('error', res.error || 'Erro ao alterar pedido.');
       }
     } catch (err: any) {
       showFeedback('error', err?.message || 'Erro ao aplicar alteração.');
@@ -315,10 +293,9 @@ export function PedidoViewer({ empresaAtiva }: PedidoViewerProps) {
   const handleExecutarTestes = async () => {
     try {
       setRunningTests(true);
-      const res = await fetch('/api/v1/pedidos/testes');
-      const data = await res.json();
-      if (data.success) {
-        setTestResults(data.data);
+      const res = await safeFetchJson<{ data: any }>('/api/v1/pedidos/testes');
+      if (res.success && res.data) {
+        setTestResults(res.data.data);
       }
     } catch (err) {
       console.error('Erro nos testes:', err);

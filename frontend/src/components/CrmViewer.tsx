@@ -32,6 +32,7 @@ import {
   Award,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 
 interface CrmDashboardMetrics {
   totalLeads: number;
@@ -214,30 +215,21 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const carregarDadosCRM = useCallback(async () => {
     setLoading(true);
     try {
-      const [mRes, lRes, oRes, aRes, fRes, auxRes] = await Promise.all([
-        fetch(`/api/v1/crm/dashboard?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-        fetch(`/api/v1/crm/leads?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-        fetch(`/api/v1/crm/oportunidades?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-        fetch(`/api/v1/crm/atividades?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-        fetch(`/api/v1/crm/follow-ups?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-        fetch(`/api/v1/crm/auxiliares?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
-      ]);
-
       const [mData, lData, oData, aData, fData, auxData] = await Promise.all([
-        mRes.json(),
-        lRes.json(),
-        oRes.json(),
-        aRes.json(),
-        fRes.json(),
-        auxRes.json(),
+        safeFetchJson<CrmDashboardMetrics>(`/api/v1/crm/dashboard?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<CrmLead[]>(`/api/v1/crm/leads?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<CrmOportunidade[]>(`/api/v1/crm/oportunidades?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<CrmAtividade[]>(`/api/v1/crm/atividades?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<CrmFollowUp[]>(`/api/v1/crm/follow-ups?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
+        safeFetchJson<any>(`/api/v1/crm/auxiliares?empresaId=${empresaAtiva.id}`, { headers: { 'x-empresa-id': empresaAtiva.id } }),
       ]);
 
-      if (mData.success) setMetrics(mData.data);
-      if (lData.success) setLeads(lData.data || []);
-      if (oData.success) setOportunidades(oData.data || []);
-      if (aData.success) setAtividades(aData.data || []);
-      if (fData.success) setFollowUps(fData.data || []);
-      if (auxData.success) setAuxiliares(auxData.data || { origens: [], motivosPerda: [], etapasFunil: [], clientes: [] });
+      if (mData.success && mData.data) setMetrics(mData.data);
+      if (lData.success && lData.data) setLeads(lData.data || []);
+      if (oData.success && oData.data) setOportunidades(oData.data || []);
+      if (aData.success && aData.data) setAtividades(aData.data || []);
+      if (fData.success && fData.data) setFollowUps(fData.data || []);
+      if (auxData.success && auxData.data) setAuxiliares(auxData.data || { origens: [], motivosPerda: [], etapasFunil: [], clientes: [] });
     } catch (err) {
       console.error('Erro ao carregar dados CRM:', err);
     } finally {
@@ -260,13 +252,12 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const handleCriarLead = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/crm/leads', {
+      const res = await safeFetchJson('/api/v1/crm/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(novoLeadForm),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowNovoLeadModal(false);
         carregarDadosCRM();
       }
@@ -280,13 +271,12 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
     if (!showConvertLeadModal) return;
 
     try {
-      const res = await fetch(`/api/v1/crm/leads/${showConvertLeadModal.id}/converter`, {
+      const res = await safeFetchJson(`/api/v1/crm/leads/${showConvertLeadModal.id}/converter`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(convertForm),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowConvertLeadModal(null);
         carregarDadosCRM();
       }
@@ -298,13 +288,12 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const handleCriarOportunidade = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/crm/oportunidades', {
+      const res = await safeFetchJson('/api/v1/crm/oportunidades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(novaOptForm),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowNovaOptModal(false);
         carregarDadosCRM();
       }
@@ -324,13 +313,12 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
     }
 
     try {
-      const res = await fetch(`/api/v1/crm/oportunidades/${optId}/etapa`, {
+      const res = await safeFetchJson(`/api/v1/crm/oportunidades/${optId}/etapa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({ etapaId: novaEtapaId }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         carregarDadosCRM();
       }
     } catch (err) {
@@ -343,7 +331,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
     if (!showPerdaModal || !perdaForm.motivoPerdaId) return;
 
     try {
-      const res = await fetch(`/api/v1/crm/oportunidades/${showPerdaModal.id}/fechar`, {
+      const res = await safeFetchJson(`/api/v1/crm/oportunidades/${showPerdaModal.id}/fechar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({
@@ -353,8 +341,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
           concorrenteVencedor: perdaForm.concorrenteVencedor,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowPerdaModal(null);
         setPerdaForm({ motivoPerdaId: '', detalhesPerda: '', concorrenteVencedor: '' });
         carregarDadosCRM();
@@ -366,7 +353,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
 
   const handleMarcarGanha = async (opt: CrmOportunidade) => {
     try {
-      const res = await fetch(`/api/v1/crm/oportunidades/${opt.id}/fechar`, {
+      const res = await safeFetchJson(`/api/v1/crm/oportunidades/${opt.id}/fechar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({
@@ -374,8 +361,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
           valorFechado: opt.valorEstimado,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         carregarDadosCRM();
       }
     } catch (err) {
@@ -388,7 +374,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
     if (!novaAtivForm.descricao || !novaAtivForm.resultado) return;
 
     try {
-      const res = await fetch('/api/v1/crm/atividades', {
+      const res = await safeFetchJson('/api/v1/crm/atividades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({
@@ -406,8 +392,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
             : undefined,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         setShowNovaAtivModal(false);
         setNovaAtivForm({ oportunidadeId: '', tipo: 'REUNIAO_ONLINE', titulo: '', descricao: '', resultado: '', proximaAcao: '', proximaData: '' });
         carregarDadosCRM();
@@ -420,13 +405,12 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const handleToggleFollowUp = async (folId: string, statusAtual: string) => {
     const novoStatus = statusAtual === 'PENDENTE' ? 'CONCLUIDO' : 'PENDENTE';
     try {
-      const res = await fetch(`/api/v1/crm/follow-ups/${folId}`, {
+      const res = await safeFetchJson(`/api/v1/crm/follow-ups/${folId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify({ status: novoStatus }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         carregarDadosCRM();
       }
     } catch (err) {

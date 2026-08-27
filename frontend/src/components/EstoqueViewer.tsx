@@ -28,6 +28,7 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
+import { safeFetchJson } from '../api/safe-fetch';
 import {
   SaldoEstoque,
   Almoxarifado,
@@ -176,23 +177,34 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
 
   const carregarDadosEstoque = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/estoque?empresaId=${empresaAtiva.id}`);
-      const json = await res.json();
-      if (json.success) {
-        setSaldos(json.data.saldos);
-        setAlmoxarifados(json.data.almoxarifados);
-        setLocalizacoes(json.data.localizacoes);
-        setLotes(json.data.lotes);
-        setReservas(json.data.reservas);
-        setChapas(json.data.chapas);
-        setRetalhos(json.data.retalhos);
-        setSucatas(json.data.sucatas);
-        setInventarios(json.data.inventarios);
-        setPolitica(json.data.politica);
+      const res = await safeFetchJson<{
+        saldos: SaldoEstoque[];
+        almoxarifados: Almoxarifado[];
+        localizacoes: LocalizacaoEstoque[];
+        lotes: LoteEstoque[];
+        reservas: ReservaEstoque[];
+        chapas: ChapaEstoque[];
+        retalhos: RetalhoChapa[];
+        sucatas: RegistroSucata[];
+        inventarios: InventarioSessao[];
+        politica: PoliticaEstoqueEmpresa;
+      }>(`/api/v1/estoque?empresaId=${empresaAtiva.id}`);
+
+      if (res.success && res.data) {
+        setSaldos(res.data.saldos || []);
+        setAlmoxarifados(res.data.almoxarifados || []);
+        setLocalizacoes(res.data.localizacoes || []);
+        setLotes(res.data.lotes || []);
+        setReservas(res.data.reservas || []);
+        setChapas(res.data.chapas || []);
+        setRetalhos(res.data.retalhos || []);
+        setSucatas(res.data.sucatas || []);
+        setInventarios(res.data.inventarios || []);
+        if (res.data.politica) setPolitica(res.data.politica);
 
         // Preencher defaults de formulários
-        if (json.data.almoxarifados.length > 0) {
-          const defaultAlmox = json.data.almoxarifados[0].id;
+        if (res.data.almoxarifados && res.data.almoxarifados.length > 0) {
+          const defaultAlmox = res.data.almoxarifados[0].id;
           setFormMovimento((prev) => ({
             ...prev,
             almoxarifadoDestinoId: defaultAlmox,
@@ -202,14 +214,14 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           setFormRetalho((prev) => ({ ...prev, almoxarifadoId: defaultAlmox }));
           setFormSucata((prev) => ({ ...prev, almoxarifadoId: defaultAlmox }));
         }
-        if (json.data.localizacoes.length > 0) {
-          const defaultLoc = json.data.localizacoes[0].id;
+        if (res.data.localizacoes && res.data.localizacoes.length > 0) {
+          const defaultLoc = res.data.localizacoes[0].id;
           setFormChapa((prev) => ({ ...prev, localizacaoId: defaultLoc }));
           setFormRetalho((prev) => ({ ...prev, localizacaoId: defaultLoc }));
           setFormSucata((prev) => ({ ...prev, localizacaoId: defaultLoc }));
         }
-        if (json.data.lotes.length > 0) {
-          const defaultLote = json.data.lotes[0].id;
+        if (res.data.lotes && res.data.lotes.length > 0) {
+          const defaultLote = res.data.lotes[0].id;
           setFormMovimento((prev) => ({ ...prev, loteId: defaultLote }));
           setFormChapa((prev) => ({ ...prev, loteId: defaultLote }));
           setFormRetalho((prev) => ({ ...prev, loteOrigemId: defaultLote }));
@@ -217,10 +229,9 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
       }
 
       // Carregar movimentos
-      const resMov = await fetch(`/api/v1/estoque/movimentos?empresaId=${empresaAtiva.id}`);
-      const jsonMov = await resMov.json();
-      if (jsonMov.success) {
-        setMovimentos(jsonMov.data);
+      const resMov = await safeFetchJson<MovimentoEstoque[]>(`/api/v1/estoque/movimentos?empresaId=${empresaAtiva.id}`);
+      if (resMov.success && resMov.data) {
+        setMovimentos(resMov.data);
       }
     } catch (err) {
       console.error('Erro ao carregar estoque:', err);
@@ -243,10 +254,9 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
   // Carregar contagens quando um inventário for selecionado
   const carregarItensInventario = async (invId: string) => {
     try {
-      const res = await fetch(`/api/v1/estoque/inventario?empresaId=${empresaAtiva.id}&inventarioId=${invId}`);
-      const json = await res.json();
-      if (json.success) {
-        setContagensInventario(json.data);
+      const res = await safeFetchJson<InventarioContagemItem[]>(`/api/v1/estoque/inventario?empresaId=${empresaAtiva.id}&inventarioId=${invId}`);
+      if (res.success && res.data) {
+        setContagensInventario(res.data);
       }
     } catch (err) {
       console.error('Erro ao carregar itens do inventário:', err);
@@ -271,18 +281,17 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
         usuarioNome: 'Operador Almoxarifado',
       };
 
-      const res = await fetch('/api/v1/estoque/movimentos', {
+      const res = await safeFetchJson<{ mensagem: string }>('/api/v1/estoque/movimentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro na movimentação: ${data.error}`);
+      if (!res.success) {
+        alert(`Erro na movimentação: ${res.error || 'Falha ao processar'}`);
         return;
       }
 
-      alert(data.data.mensagem);
+      alert(res.data?.mensagem || 'Movimentação realizada com sucesso');
       setModalNovoMovimento(false);
       carregarDadosEstoque();
     } catch (err: any) {
@@ -293,7 +302,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
   const handleEstornarMovimento = async () => {
     if (!modalEstorno || !motivoEstorno) return;
     try {
-      const res = await fetch(`/api/v1/estoque/movimentos/${modalEstorno.id}/estorno`, {
+      const res = await safeFetchJson<{ mensagem: string }>(`/api/v1/estoque/movimentos/${modalEstorno.id}/estorno`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -302,13 +311,12 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           usuario: { id: 'user-sup', nome: 'Supervisor Estoque' },
         }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro ao estornar: ${data.error}`);
+      if (!res.success) {
+        alert(`Erro ao estornar: ${res.error || 'Falha ao estornar'}`);
         return;
       }
 
-      alert(data.data.mensagem);
+      alert(res.data?.mensagem || 'Estorno realizado com sucesso');
       setModalEstorno(null);
       setMotivoEstorno('');
       carregarDadosEstoque();
@@ -320,18 +328,17 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
   const handleCadastrarChapa = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/estoque/chapas', {
+      const res = await safeFetchJson<ChapaEstoque>('/api/v1/estoque/chapas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empresaId: empresaAtiva.id, ...formChapa }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro: ${data.error}`);
+      if (!res.success || !res.data) {
+        alert(`Erro: ${res.error || 'Falha ao cadastrar chapa'}`);
         return;
       }
 
-      alert(`Chapa ${data.data.codigoChapa} cadastrada com sucesso! Área: ${data.data.areaM2}m², Peso: ${data.data.pesoKg}kg.`);
+      alert(`Chapa ${res.data.codigoChapa} cadastrada com sucesso! Área: ${res.data.areaM2}m², Peso: ${res.data.pesoKg}kg.`);
       setModalNovaChapa(false);
       carregarDadosEstoque();
     } catch (err: any) {
@@ -342,18 +349,17 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
   const handleCadastrarRetalho = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/estoque/retalhos', {
+      const res = await safeFetchJson<RetalhoChapa>('/api/v1/estoque/retalhos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empresaId: empresaAtiva.id, ...formRetalho }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro: ${data.error}`);
+      if (!res.success || !res.data) {
+        alert(`Erro: ${res.error || 'Falha ao cadastrar retalho'}`);
         return;
       }
 
-      alert(`Retalho ${data.data.codigoRetalho} registrado com sucesso! Peso: ${data.data.pesoKg}kg (${data.data.aproveitamentoEstimadoPerc}% de aproveitamento).`);
+      alert(`Retalho ${res.data.codigoRetalho} registrado com sucesso! Peso: ${res.data.pesoKg}kg (${res.data.aproveitamentoEstimadoPerc}% de aproveitamento).`);
       setModalNovoRetalho(false);
       carregarDadosEstoque();
     } catch (err: any) {
@@ -364,7 +370,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
   const handleRegistrarSucata = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/estoque/sucatas', {
+      const res = await safeFetchJson<RegistroSucata>('/api/v1/estoque/sucatas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -374,13 +380,12 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           responsavelNome: 'Marcos Caldeiraria',
         }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro: ${data.error}`);
+      if (!res.success || !res.data) {
+        alert(`Erro: ${res.error || 'Falha ao registrar sucata'}`);
         return;
       }
 
-      alert(`Sucata ${data.data.codigoSucata} (${data.data.pesoKg}kg) pesada e destinada à caçamba.`);
+      alert(`Sucata ${res.data.codigoSucata} (${res.data.pesoKg}kg) pesada e destinada à caçamba.`);
       setModalNovaSucata(false);
       carregarDadosEstoque();
     } catch (err: any) {
@@ -390,7 +395,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
 
   const handleIniciarInventario = async (titulo: string, tipo: string) => {
     try {
-      const res = await fetch('/api/v1/estoque/inventario', {
+      const res = await safeFetchJson<{ sessao: InventarioSessao }>('/api/v1/estoque/inventario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -400,13 +405,12 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           responsavelNome: 'Carlos Almoxarife',
         }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Erro: ${data.error}`);
+      if (!res.success || !res.data) {
+        alert(`Erro: ${res.error || 'Falha ao iniciar inventário'}`);
         return;
       }
 
-      alert(`Sessão de Inventário ${data.data.sessao.numeroSessao} iniciada.`);
+      alert(`Sessão de Inventário ${res.data.sessao.numeroSessao} iniciada.`);
       setModalNovoInventario(false);
       carregarDadosEstoque();
     } catch (err: any) {
@@ -416,7 +420,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
 
   const handleConciliarInventario = async (invId: string, aprovador?: string) => {
     try {
-      const res = await fetch(`/api/v1/estoque/inventario/${invId}/conciliar`, {
+      const res = await safeFetchJson<{ mensagem: string }>(`/api/v1/estoque/inventario/${invId}/conciliar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -425,13 +429,12 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           aprovador,
         }),
       });
-      const data = await res.json();
-      if (!data.success) {
-        alert(`Falha na conciliação: ${data.error}`);
+      if (!res.success) {
+        alert(`Falha na conciliação: ${res.error || 'Erro ao conciliar'}`);
         return;
       }
 
-      alert(data.data.mensagem);
+      alert(res.data?.mensagem || 'Conciliação concluída');
       carregarDadosEstoque();
       if (inventarioSelecionado) {
         carregarItensInventario(inventarioSelecionado.id);
@@ -445,7 +448,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
     if (!politica) return;
     try {
       const novoValor = !politica.permiteSaldoNegativo;
-      const res = await fetch('/api/v1/estoque/politica', {
+      const res = await safeFetchJson<PoliticaEstoqueEmpresa>('/api/v1/estoque/politica', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -453,9 +456,8 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           permiteSaldoNegativo: novoValor,
         }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setPolitica(data.data);
+      if (res.success && res.data) {
+        setPolitica(res.data);
         alert(`Política atualizada: Permitir Saldo Negativo = ${novoValor ? 'SIM' : 'NÃO'}`);
       }
     } catch (err: any) {
@@ -1192,7 +1194,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
                               <button
                                 onClick={async () => {
                                   if (!confirm('Deseja cancelar esta reserva e liberar o saldo para o estoque disponível?')) return;
-                                  const res = await fetch('/api/v1/estoque/reservas', {
+                                  const res = await safeFetchJson<{ mensagem: string }>('/api/v1/estoque/reservas', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -1201,10 +1203,11 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
                                       reservaId: r.id,
                                     }),
                                   });
-                                  const data = await res.json();
-                                  if (data.success) {
-                                    alert(data.data.mensagem);
+                                  if (res.success && res.data) {
+                                    alert(res.data.mensagem);
                                     carregarDadosEstoque();
+                                  } else if (res.error) {
+                                    alert(res.error);
                                   }
                                 }}
                                 className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded font-semibold text-[10px]"
