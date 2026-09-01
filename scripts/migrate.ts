@@ -39,12 +39,12 @@ if (!fs.existsSync(migrationsDir)) {
   return;
 }
 
-    const files = fs
-      .readdirSync(migrationsDir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort();
+const files = fs
+  .readdirSync(migrationsDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort();
 
-    logger.info(`Encontrados ${files.length} arquivos de migration.`);
+logger.info(`Encontrados ${files.length} arquivos de migration.`);
 
     for (const file of files) {
       if (appliedSet.has(file)) {
