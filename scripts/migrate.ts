@@ -26,12 +26,18 @@ async function runMigrations() {
     const res = await client.query<{ name: string }>('SELECT name FROM schema_migrations ORDER BY id ASC');
     const appliedSet = new Set(res.rows.map((r) => r.name));
 
-    // 3. Read migration files from migrations directory
-    const migrationsDir = path.join(process.cwd(), 'migrations');
-    if (!fs.existsSync(migrationsDir)) {
-      logger.warn(`Diretório de migrations não encontrado: ${migrationsDir}`);
-      return;
-    }
+   // 3. Read migration files from backend/db/migrations directory
+const migrationsDir = path.join(
+  process.cwd(),
+  'backend',
+  'db',
+  'migrations'
+);
+
+if (!fs.existsSync(migrationsDir)) {
+  logger.warn(`Diretório de migrations não encontrado: ${migrationsDir}`);
+  return;
+}
 
     const files = fs
       .readdirSync(migrationsDir)
