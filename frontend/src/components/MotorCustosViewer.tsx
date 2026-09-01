@@ -175,22 +175,10 @@ export function MotorCustosViewer({ empresaId, ops, onOpenOpModal }: MotorCustos
       {/* HEADER SUPERIOR DO MOTOR DE CUSTOS */}
       <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Multi-empresa & Parametrização Vigente
-            </span>
-            <span className="bg-blue-500/20 text-blue-300 text-xs font-mono px-2 py-0.5 rounded border border-blue-500/30">
-              {vigenciaAtiva?.versao || 'VIG-2026-Q1'}
-            </span>
-          </div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Calculator className="w-6 h-6 text-emerald-400" />
             Motor de Custos Industriais (Padrão × Estimado × Realizado)
           </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Apropriação sem taxas fixas no código: cálculo de Materiais, Perdas, Mão de Obra, Custo-Hora Máquina, Setup, Consumíveis, Terceiros, Frete, Embalagem, GGF, Comissões e Impostos.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

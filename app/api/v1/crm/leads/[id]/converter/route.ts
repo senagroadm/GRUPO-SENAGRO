@@ -20,6 +20,7 @@ export const POST = createSecureHandler(async (req: NextRequest, ctx) => {
     clienteExistenteId: body.clienteExistenteId,
     usuarioId,
     usuarioNome: body.usuarioNome || 'Vendedor Comercial',
+    leadData: body.leadData,
   });
 
   return NextResponse.json({

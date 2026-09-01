@@ -589,6 +589,7 @@ export interface InutilizacaoResponse {
 export interface XmlItemParsed {
   numeroItem: number;
   codigoProduto: string;
+  codigoEan?: string;
   descricao: string;
   ncm: string;
   cest?: string;
@@ -598,36 +599,80 @@ export interface XmlItemParsed {
   valorUnitario: number;
   valorTotalBruto: number;
   valorDesconto: number;
+  valorFreteRateado: number;
+  valorSeguroRateado: number;
+  valorOutrasDespesasRateado: number;
   cstCsosnIcms: string;
+  origemMercadoria?: string;
   baseCalculoIcms: number;
   aliquotaIcms: number;
   valorIcms: number;
+  baseCalculoIcmsSt?: number;
+  aliquotaIcmsSt?: number;
+  valorIcmsSt?: number;
+  baseCalculoIpi?: number;
+  aliquotaIpi?: number;
   valorIpi: number;
+  baseCalculoPis?: number;
+  aliquotaPis?: number;
   valorPis: number;
+  baseCalculoCofins?: number;
+  aliquotaCofins?: number;
   valorCofins: number;
   loteNumero?: string;
+  dataFabricacaoLote?: string;
+  dataValidadeLote?: string;
+  // Custo de Aquisição Rateado (Industrial)
+  custoAquisicaoTotal: number;
+  custoAquisicaoUnitario: number;
+  aliquotaIcmsCreditoRecuperavel?: number;
+  valorIcmsCreditoRecuperavel?: number;
+  custoLiquidoAquisicaoUnitario?: number;
+}
+
+export interface ChaveAcessoNFeDecomposta {
+  chaveAcesso: string;
+  codigoUf: string;
+  ufSigla: string;
+  anoMesEmissao: string;
+  cnpjEmitente: string;
+  modelo: ModeloDocumentoFiscal;
+  serie: number;
+  numeroDocumento: number;
+  tipoEmissao: TipoEmissaoFiscal;
+  codigoNumerico: string;
+  digitoVerificador: number;
+  chaveValida: boolean;
 }
 
 export interface XmlNFeParsed {
   chaveAcesso: string;
+  chaveDecomposta?: ChaveAcessoNFeDecomposta;
   modelo: ModeloDocumentoFiscal;
   serie: number;
   numeroDocumento: number;
   dataHoraEmissao: string;
   naturezaOperacao: string;
   tipoOperacao: TipoOperacaoNFe;
+  tipoEmissao?: TipoEmissaoFiscal;
+  finalidade?: FinalidadeNFe;
   emitente: {
     cnpjCpf: string;
     razaoSocialNome: string;
     nomeFantasia?: string;
     inscricaoEstadual?: string;
+    inscricaoMunicipal?: string;
+    cnae?: string;
+    regimeTributarioCRT?: string;
     uf: string;
     municipio: string;
     codigoMunicipioIBGE: string;
     logradouro: string;
     numero: string;
+    complemento?: string;
     bairro: string;
     cep: string;
+    telefone?: string;
   };
   destinatario: {
     cnpjCpf: string;
@@ -640,6 +685,7 @@ export interface XmlNFeParsed {
     numero: string;
     bairro: string;
     cep: string;
+    telefone?: string;
   };
   itens: XmlItemParsed[];
   totais: {
@@ -647,22 +693,55 @@ export interface XmlNFeParsed {
     valorFrete: number;
     valorSeguro: number;
     valorDesconto: number;
+    valorOutrasDespesas?: number;
     baseCalculoIcms: number;
     valorIcms: number;
+    baseCalculoIcmsSt?: number;
+    valorIcmsSt?: number;
     valorIpi: number;
     valorPis: number;
     valorCofins: number;
     valorTotalNota: number;
+    valorTotalTributosAproximado?: number;
+  };
+  transporte?: {
+    modalidadeFrete: string;
+    transportadora?: {
+      cnpjCpf?: string;
+      razaoSocial?: string;
+      inscricaoEstadual?: string;
+      enderecoCompleto?: string;
+      municipio?: string;
+      uf?: string;
+    };
+    volumes?: {
+      quantidade?: number;
+      especie?: string;
+      marca?: string;
+      pesoLiquidoKg?: number;
+      pesoBrutoKg?: number;
+    };
   };
   cobranca?: {
+    fatura?: {
+      numero?: string;
+      valorOriginal?: number;
+      valorLiquido?: number;
+    };
     duplicatas: Array<{
       numero: string;
       vencimento: string;
       valor: number;
     }>;
   };
+  informacoesAdicionais?: {
+    informacoesFisco?: string;
+    informacoesComplementaresContribuinte?: string;
+  };
   protocoloAutorizacao?: string;
   dataHoraAutorizacao?: string;
+  statusSefazCodigo?: number;
+  statusSefazMotivo?: string;
   rawXml: string;
 }
 

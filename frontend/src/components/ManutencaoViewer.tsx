@@ -485,14 +485,32 @@ export function ManutencaoViewer({ empresaAtiva }: ManutencaoViewerProps) {
       });
       const json = await res.json();
       if (json.success) {
-        setFeedback({ tipo: 'success', texto: json.message });
+        setFeedback({ tipo: 'success', texto: json.message || 'Equipamento cadastrado com sucesso!' });
         setShowModalNovoAtivo(false);
-        carregarDados();
+        setFormNovoAtivo({
+          tag: '',
+          nome: '',
+          tipo: 'CORTE_LASER',
+          marca: '',
+          modelo: '',
+          numeroSerie: '',
+          anoFabricacao: new Date().getFullYear(),
+          criticidade: 'A',
+          centroCusto: 'CC-PRODUCAO',
+          localizacaoSetor: 'GALPAO_1',
+          statusOperacional: 'OPERACIONAL',
+          dataAquisicao: new Date().toISOString().split('T')[0],
+          valorAquisicao: 0,
+          custoHoraMaquina: 150.0,
+          horimetroAtual: 0,
+          horimetroUltimaPreventiva: 0,
+        });
+        await carregarDados();
       } else {
-        setFeedback({ tipo: 'error', texto: json.error });
+        setFeedback({ tipo: 'error', texto: json.error || 'Erro ao cadastrar equipamento.' });
       }
     } catch (e: any) {
-      setFeedback({ tipo: 'error', texto: e.message });
+      setFeedback({ tipo: 'error', texto: e.message || 'Erro inesperado ao cadastrar equipamento.' });
     }
   };
 
@@ -928,8 +946,28 @@ export function ManutencaoViewer({ empresaAtiva }: ManutencaoViewerProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ativos.map((atv) => {
+          {ativos.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-4">
+              <div className="w-16 h-16 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                <Factory className="w-8 h-8" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h4 className="text-base font-bold text-slate-900">Nenhum equipamento cadastrado nesta empresa</h4>
+                <p className="text-xs text-slate-500">
+                  Cadastre as máquinas, células de corte, dobras ou centros de usinagem para gerenciar planos preventivos, horímetros e OMs.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModalNovoAtivo(true)}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Primeiro Equipamento
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ativos.map((atv) => {
               const isOperacional = atv.statusOperacional === 'OPERACIONAL';
               return (
                 <div
@@ -1048,6 +1086,7 @@ export function ManutencaoViewer({ empresaAtiva }: ManutencaoViewerProps) {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
@@ -1316,7 +1355,7 @@ export function ManutencaoViewer({ empresaAtiva }: ManutencaoViewerProps) {
               </h4>
               <p className="text-xs text-blue-700 mt-0.5">
                 Toda requisição de peças sobressalentes sem saldo suficiente em estoque gera automaticamente uma
-                <strong> Solicitação de Compra (SC)</strong> com prioridade emergencial no módulo de Compras do NEXUS ERP.
+                <strong> Solicitação de Compra (SC)</strong> com prioridade emergencial no módulo de Compras do GRUPO SENAGRO.
               </p>
             </div>
           </div>
@@ -2094,6 +2133,191 @@ export function ManutencaoViewer({ empresaAtiva }: ManutencaoViewerProps) {
                   className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg shadow-xs"
                 >
                   Salvar Movimentação
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DIALOG: CADASTRAR NOVO EQUIPAMENTO / ATIVO */}
+      {showModalNovoAtivo && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 space-y-5 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-xs">
+                  <Factory className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Cadastrar Novo Equipamento Industrial</h3>
+                  <p className="text-xs text-slate-500">Cadastro de ativo no parque fabril e integração ao PCP / PCM</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModalNovoAtivo(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCadastrarNovoAtivo} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">TAG / Código do Ativo *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: LASER-03, DOB-02"
+                    value={formNovoAtivo.tag}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, tag: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-slate-700 mb-1">Nome do Ativo / Descrição *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Máquina de Corte Laser Fibra 15kW"
+                    value={formNovoAtivo.nome}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, nome: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Tipo de Equipamento</label>
+                  <select
+                    value={formNovoAtivo.tipo}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, tipo: e.target.value as TipoAtivo })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-slate-900"
+                  >
+                    <option value="CORTE_LASER">Corte a Laser Fibra</option>
+                    <option value="DOBRADEIRA_CNC">Dobradeira CNC</option>
+                    <option value="PUNCIONADEIRA">Puncionadeira</option>
+                    <option value="SOLDA_ROBOTICA">Célula de Solda Robótica</option>
+                    <option value="CENTRO_USINAGEM">Centro de Usinagem</option>
+                    <option value="PONTE_ROLANTE">Ponte Rolante / Içamento</option>
+                    <option value="COMPRESSOR_AR">Compressor de Ar Industrial</option>
+                    <option value="CABINE_PINTURA">Cabine de Pintura</option>
+                    <option value="GUILHOTINA">Guilhotina Hidráulica</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Fabricante / Marca</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Trumpf, Bodor, Bystronic"
+                    value={formNovoAtivo.marca}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, marca: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Modelo</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: TruLaser 5030"
+                    value={formNovoAtivo.modelo}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, modelo: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Setor / Localização *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formNovoAtivo.localizacaoSetor}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, localizacaoSetor: e.target.value })}
+                    placeholder="Ex: GALPAO_1_CORTE"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Data de Aquisição *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formNovoAtivo.dataAquisicao}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, dataAquisicao: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Criticidade Fabril</label>
+                  <select
+                    value={formNovoAtivo.criticidade}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, criticidade: e.target.value as 'A' | 'B' | 'C' })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-slate-900"
+                  >
+                    <option value="A">Classe A - Crítico (Gargalo de Produção)</option>
+                    <option value="B">Classe B - Médio Impacto</option>
+                    <option value="C">Classe C - Baixo Impacto</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Número de Série</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: SN-2024-8891"
+                    value={formNovoAtivo.numeroSerie}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, numeroSerie: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Custo-Hora Máquina (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formNovoAtivo.custoHoraMaquina}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, custoHoraMaquina: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Horímetro Inicial (Horas)</label>
+                  <input
+                    type="number"
+                    value={formNovoAtivo.horimetroAtual}
+                    onChange={(e) => setFormNovoAtivo({ ...formNovoAtivo, horimetroAtual: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowModalNovoAtivo(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Salvar Equipamento
                 </button>
               </div>
             </form>

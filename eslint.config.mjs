@@ -1,15 +1,21 @@
-import { defineConfig } from "eslint/config";
-import next from "eslint-config-next";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import nextPlugin from "@next/eslint-plugin-next";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export default defineConfig([{
-    extends: [...next],
+export default [
+  {
+    plugins: {
+      "@next/next": nextPlugin,
+      "react-hooks": reactHooksPlugin,
+    },
     rules: {
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/exhaustive-deps": "warn"
-    }
-}]);
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+  {
+    ignores: [".next/*", "node_modules/*", "dist/*"],
+  },
+];
+

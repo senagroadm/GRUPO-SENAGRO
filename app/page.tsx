@@ -15,6 +15,9 @@ import { ExpedicaoViewer } from '../frontend/src/components/ExpedicaoViewer';
 import { ManutencaoViewer } from '../frontend/src/components/ManutencaoViewer';
 import { PatrimonioViewer } from '../frontend/src/components/PatrimonioViewer';
 import { FinanceiroViewer } from '../frontend/src/components/FinanceiroViewer';
+import { RhOperacionalViewer } from '../frontend/src/components/RhOperacionalViewer';
+import { CrmViewer } from '../frontend/src/components/CrmViewer';
+import { GaleriaProdutosViewer } from '../frontend/src/components/GaleriaProdutosViewer';
 import { TritechAiBridgeViewer } from '../frontend/src/components/TritechAiBridgeViewer';
 import { PerformanceJobsViewer } from '../frontend/src/components/PerformanceJobsViewer';
 import { BackupRecoveryViewer } from '../frontend/src/components/BackupRecoveryViewer';
@@ -22,9 +25,12 @@ import { AcceptanceTestsViewer } from '../frontend/src/components/AcceptanceTest
 import { SecurityHardeningViewer } from '../frontend/src/components/SecurityHardeningViewer';
 import { ObservabilidadeViewer } from '../frontend/src/components/ObservabilidadeViewer';
 import { UxStandardizationViewer } from '../frontend/src/components/UxStandardizationViewer';
+import { LoginViewer } from '../frontend/src/components/LoginViewer';
 import {
   Building2,
   Factory,
+  Target,
+  Users,
   ShoppingCart,
   ShoppingBag,
   Boxes,
@@ -50,6 +56,7 @@ import {
   Shield,
   ShieldAlert,
   UserCheck,
+  LogOut,
 } from 'lucide-react';
 
 export type UserRole = 'ADMIN' | 'COLABORADOR';
@@ -109,11 +116,33 @@ interface MenuSection {
 }
 
 export default function ArchitectureDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('comercial');
   const [empresaAtiva, setEmpresaAtiva] = useState<Empresa>(EMPRESAS_GRUPO[0]);
   const [activeRole, setActiveRole] = useState<UserRole>('ADMIN');
+  const [userEmail, setUserEmail] = useState<string>('dgdiniz99@gmail.com');
 
-  const currentUser = PROFILES[activeRole];
+  const currentUser = {
+    ...PROFILES[activeRole],
+    email: userEmail,
+  };
+
+  const handleLoginSuccess = (loginData: {
+    email: string;
+    role: UserRole;
+    empresa: Empresa;
+    nome: string;
+  }) => {
+    setUserEmail(loginData.email);
+    setActiveRole(loginData.role);
+    setEmpresaAtiva(loginData.empresa);
+    setIsAuthenticated(true);
+    setActiveTab('comercial');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
 
   // Se o usuário alternar para Colaborador e estiver em aba administrativa, redireciona para a primeira aba operacional
   useEffect(() => {
@@ -140,21 +169,24 @@ export default function ArchitectureDashboard() {
     {
       title: 'Operações & Negócios',
       items: [
-        { id: 'comercial', label: 'Comercial & CPQ', icon: ShoppingCart },
-        { id: 'suprimentos', label: 'Suprimentos & Compras', icon: ShoppingBag },
-        { id: 'estoque', label: 'Estoque & Intercompany', icon: Boxes },
+        { id: 'crm', label: 'CRM', icon: Target },
+        { id: 'comercial', label: 'Comercial', icon: ShoppingCart },
+        { id: 'catalogo', label: 'Catálogo', icon: Boxes },
+        { id: 'suprimentos', label: 'Compras e Suprimentos', icon: ShoppingBag },
+        { id: 'estoque', label: 'Estoque', icon: Boxes },
         { id: 'chaoFabrica', label: 'Chão de Fábrica / PCP', icon: Factory },
-        { id: 'qualidade', label: 'Qualidade & RNC', icon: ShieldCheck },
-        { id: 'expedicaoLogistica', label: 'Expedição & Logística', icon: Truck },
-        { id: 'expedicaoFiscal', label: 'Faturamento & Fiscal', icon: Receipt },
-        { id: 'financeiro', label: 'Financeiro & Bancos', icon: Landmark },
+        { id: 'qualidade', label: 'Gestão de qualidade', icon: ShieldCheck },
+        { id: 'expedicaoLogistica', label: 'Expedição e Logística', icon: Truck },
+        { id: 'expedicaoFiscal', label: 'Faturamento', icon: Receipt },
+        { id: 'financeiro', label: 'Financeiro', icon: Landmark },
+        { id: 'rhOperacional', label: 'Recursos Humanos', icon: Users },
       ],
     },
     {
       title: 'Ativos, Manutenção & Ferramentaria',
       items: [
         { id: 'manutencao', label: 'Manutenção Industrial (PCM)', icon: Wrench },
-        { id: 'patrimonio', label: 'Patrimônio & Calibração', icon: Gauge },
+        { id: 'patrimonio', label: 'Patrimônio', icon: Gauge },
       ],
     },
     {
@@ -196,6 +228,10 @@ export default function ArchitectureDashboard() {
   const ActiveIcon = activeInfo.item.icon;
   const isAccessDenied = activeRole !== 'ADMIN' && ADMIN_TAB_IDS.has(activeTab);
 
+  if (!isAuthenticated) {
+    return <LoginViewer onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-row font-sans">
       
@@ -211,31 +247,12 @@ export default function ArchitectureDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-white text-sm tracking-tight">NEXUS ERP</span>
+              <span className="font-extrabold text-white text-sm tracking-tight">GRUPO SENAGRO</span>
               <span className="text-[9px] font-bold px-1.5 py-0.2 bg-indigo-900/80 text-indigo-300 rounded border border-indigo-700/50">
                 v1.0
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate">Grupo TRITECH • 5 CNPJs</p>
           </div>
-        </div>
-
-        {/* Status Rápido do Tenant e Perfil RBAC */}
-        <div className="px-4 py-2.5 bg-slate-900/40 border-b border-slate-800/50 flex items-center justify-between text-[11px]">
-          <div className="flex items-center gap-1.5 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-medium text-slate-300">Tenant:</span>
-            <strong className="text-white font-mono text-[10px]">{empresaAtiva.codigo}</strong>
-          </div>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-              activeRole === 'ADMIN'
-                ? 'bg-indigo-950 text-indigo-300 border-indigo-700/60'
-                : 'bg-emerald-950 text-emerald-300 border-emerald-700/60'
-            }`}
-          >
-            {activeRole === 'ADMIN' ? 'Super Admin' : 'Colaborador'}
-          </span>
         </div>
 
         {/* Menu de Navegação Vertical com Categorias Condicionais */}
@@ -293,27 +310,31 @@ export default function ArchitectureDashboard() {
 
         {/* Footer do Usuário na Sidebar */}
         <div className="p-3 border-t border-slate-800/80 bg-slate-900/70">
-          <div className="flex items-center gap-2.5">
-            <div
-              className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs ${
-                activeRole === 'ADMIN'
-                  ? 'bg-indigo-950 border-indigo-700/60 text-indigo-300'
-                  : 'bg-emerald-950 border-emerald-700/60 text-emerald-300'
-              }`}
-            >
-              <User className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-200 truncate">{currentUser.email}</p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs shrink-0 ${
+                  activeRole === 'ADMIN'
+                    ? 'bg-indigo-950 border-indigo-700/60 text-indigo-300'
+                    : 'bg-emerald-950 border-emerald-700/60 text-emerald-300'
+                }`}
+              >
+                <User className="w-4 h-4" />
               </div>
-              <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                <Shield className={`w-3 h-3 ${activeRole === 'ADMIN' ? 'text-indigo-400' : 'text-emerald-400'}`} />
-                <span>{currentUser.role === 'ADMIN' ? 'Super Admin' : 'Colaborador'}</span>
-                <span>•</span>
-                <span>Alçada {currentUser.alcada}</span>
-              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-200 truncate">{currentUser.email}</p>
+                <p className="text-[10px] text-slate-500 truncate">{currentUser.cargo}</p>
+              </div>
             </div>
+            <button
+              type="button"
+              id="sidebar-btn-logout"
+              onClick={handleLogout}
+              title="Encerrar Sessão"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
@@ -332,11 +353,6 @@ export default function ArchitectureDashboard() {
               <ActiveIcon className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                <span>{activeInfo.section}</span>
-                <ChevronRight className="w-3 h-3 text-slate-400" />
-                <span className="text-indigo-600 font-bold">{activeInfo.item.label}</span>
-              </div>
               <h2 className="text-sm font-extrabold text-slate-800 tracking-tight">
                 {activeInfo.item.label}
               </h2>
@@ -346,31 +362,6 @@ export default function ArchitectureDashboard() {
           {/* Controles de Governança, RBAC & Seletor de Empresa */}
           <div className="flex flex-wrap items-center gap-3">
             
-            {/* Seletor Rápido de Perfil RBAC (Mock/Simulação de Usuário) */}
-            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-              <div className="p-1 rounded bg-white shadow-2xs text-indigo-600 border border-slate-200">
-                {activeRole === 'ADMIN' ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                ) : (
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[9px] font-extrabold uppercase text-slate-400 leading-none">
-                  Perfil de Acesso (RBAC)
-                </span>
-                <select
-                  id="rbac-profile-selector"
-                  className="bg-transparent text-slate-800 text-xs font-bold focus:outline-none cursor-pointer pr-2 pt-0.5"
-                  value={activeRole}
-                  onChange={(e) => handleRoleChange(e.target.value as UserRole)}
-                >
-                  <option value="ADMIN">Administrador Principal (Super Admin)</option>
-                  <option value="COLABORADOR">Colaborador Padrão (Operacional)</option>
-                </select>
-              </div>
-            </div>
-
             {/* Tag de Isolamento e Segurança */}
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -399,6 +390,17 @@ export default function ArchitectureDashboard() {
               </div>
             </div>
 
+            {/* Botão de Logout / Trocar Usuário */}
+            <button
+              type="button"
+              id="top-header-btn-logout"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sair</span>
+            </button>
+
           </div>
         </header>
 
@@ -424,7 +426,9 @@ export default function ArchitectureDashboard() {
           ) : (
             <>
               {/* Módulos Operacionais */}
+              {activeTab === 'crm' && <CrmViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'comercial' && <OrcamentoViewer empresaAtiva={empresaAtiva} />}
+              {activeTab === 'catalogo' && <GaleriaProdutosViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'suprimentos' && <ComprasViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'estoque' && <EstoqueViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'chaoFabrica' && <ProducaoViewer empresaId={empresaAtiva.id} />}
@@ -432,6 +436,7 @@ export default function ArchitectureDashboard() {
               {activeTab === 'expedicaoLogistica' && <ExpedicaoViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'expedicaoFiscal' && <FiscalViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'financeiro' && <FinanceiroViewer empresaAtiva={empresaAtiva} />}
+              {activeTab === 'rhOperacional' && <RhOperacionalViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'manutencao' && <ManutencaoViewer empresaAtiva={empresaAtiva} />}
               {activeTab === 'patrimonio' && <PatrimonioViewer empresaAtiva={empresaAtiva} />}
 

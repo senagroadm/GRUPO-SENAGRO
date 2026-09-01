@@ -630,20 +630,9 @@ export function FinanceiroViewer({ empresaAtiva }: FinanceiroViewerProps) {
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                MÓDULO FINANCEIRO • AP/AR & TESOURARIA
-              </span>
-              <span className="text-xs text-slate-400 font-mono">SoD & Isolamento Estrito</span>
-            </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
               Gestão Financeira & Controladoria — {empresaAtiva.nomeFantasia}
             </h1>
-            <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
-              Núcleo transacional financeiro com controle de títulos a pagar e a receber, parcelamentos, baixas parciais,
-              juros/multas, renegociações de dívidas, adiantamentos, segregação de funções (SoD) e plano de contas industrial.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

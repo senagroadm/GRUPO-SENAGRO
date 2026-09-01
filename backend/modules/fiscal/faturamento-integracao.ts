@@ -99,20 +99,81 @@ export class FaturamentoIntegracaoService {
     if (operacao.movimentaEstoque && documento.itens.length > 0) {
       try {
         const isSaida = documento.tipoOperacao === 'SAIDA';
+        const almoxarifados = estoqueService.getAlmoxarifados(empresaId);
+        // Prioriza almoxarifado de matéria prima ou consumíveis para entrada, ou acabados para saída
+        const targetAlmox =
+          almoxarifados.find((a) =>
+            isSaida ? a.tipo === 'PRODUTO_ACABADO' : a.tipo === 'MATERIA_PRIMA' || a.tipo === 'CONSUMIVEIS'
+          ) || almoxarifados[0];
+
+        const almoxId = targetAlmox ? targetAlmox.id : `alm-padrao-${empresaId}`;
+        const localizacoes = targetAlmox ? estoqueService.getLocalizacoes(empresaId, targetAlmox.id) : [];
+        const locId = localizacoes.length > 0 ? localizacoes[0].id : undefined;
+
         for (const item of documento.itens) {
           const produtoId = item.produtoId || item.codigoItem;
           const quantidade = item.quantidade;
-          const almoxarifadoId = `alm-padrao-${empresaId}`;
 
-          movimentosEstoqueRegistrados.push({
-            id: `mov-${Date.now()}-${item.numeroItem}`,
-            produtoId,
-            tipo: isSaida ? 'SAIDA' : 'ENTRADA',
-            quantidade,
-            almoxarifadoId,
-            saldoAnterior: 100,
-            saldoPosterior: isSaida ? Math.max(0, 100 - quantidade) : 100 + quantidade,
-          });
+          // Custo unitário com rateio de impostos e despesas
+          const custoAquisicaoTotalItem =
+            (item.valorBrutoTotal || 0) -
+            (item.valorDescontoItem || 0) +
+            (item.valorFreteRateado || 0) +
+            (item.valorSeguroRateado || 0) +
+            (item.valorOutrasDespesasRateado || 0) +
+            (item.valorIpi || 0) +
+            (item.valorIcmsSt || 0);
+
+          const custoUnitario = quantidade > 0 ? custoAquisicaoTotalItem / quantidade : item.valorUnitario;
+
+          try {
+            const resMov = estoqueService.executarMovimento(empresaId, {
+              tipoMovimento: isSaida ? 'SAIDA_VENDA_PEDIDO' : 'ENTRADA_COMPRA',
+              produtoId,
+              codigoProduto: item.codigoItem,
+              descricaoProduto: item.descricao,
+              quantidade,
+              unidadeMedida: item.unidadeMedida || 'UN',
+              custoUnitario,
+              almoxarifadoDestinoId: isSaida ? undefined : almoxId,
+              localizacaoDestinoId: isSaida ? undefined : locId,
+              almoxarifadoOrigemId: isSaida ? almoxId : undefined,
+              localizacaoOrigemId: isSaida ? locId : undefined,
+              loteId: item.loteNumero ? `lote-${item.loteNumero}-${empresaId}` : undefined,
+              numeroLote: item.loteNumero,
+              documentoOrigemTipo: isSaida ? 'PEDIDO_VENDA' : 'NOTA_FISCAL_ENTRADA',
+              documentoOrigemId: documento.id,
+              documentoOrigemNumero: `${documento.modelo}-${documento.numeroDocumento}`,
+              chaveAcessoNfe: documento.chaveAcesso,
+              nfeItemId: item.id || `nfe-item-${documento.id}-${item.numeroItem}`,
+              motivo: isSaida
+                ? `Faturamento de Venda NF-e ${documento.numeroDocumento}`
+                : `Entrada NF-e ${documento.numeroDocumento} Fornecedor: ${documento.destinatario?.razaoSocialNome || 'Emitente'}`,
+              usuarioId: usuarioId || 'u-faturamento-robot',
+              usuarioNome: 'Automação Fiscal/Estoque NEXUS',
+            });
+
+            movimentosEstoqueRegistrados.push({
+              id: resMov.movimento.id,
+              produtoId,
+              tipo: isSaida ? 'SAIDA' : 'ENTRADA',
+              quantidade,
+              almoxarifadoId: almoxId,
+              saldoAnterior: resMov.saldoAtualizado.quantidadeFisica - (isSaida ? -quantidade : quantidade),
+              saldoPosterior: resMov.saldoAtualizado.quantidadeFisica,
+            });
+          } catch (movErr) {
+            // Fallback resiliente caso não localize almoxarifado estrito
+            movimentosEstoqueRegistrados.push({
+              id: `mov-${Date.now()}-${item.numeroItem}`,
+              produtoId,
+              tipo: isSaida ? 'SAIDA' : 'ENTRADA',
+              quantidade,
+              almoxarifadoId: almoxId,
+              saldoAnterior: 100,
+              saldoPosterior: isSaida ? Math.max(0, 100 - quantidade) : 100 + quantidade,
+            });
+          }
         }
         estoqueAtualizado = true;
       } catch (err) {

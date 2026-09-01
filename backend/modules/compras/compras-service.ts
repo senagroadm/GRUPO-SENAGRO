@@ -977,6 +977,39 @@ export class ComprasService {
     });
     this.aprovarSolicitacao(sol1.id, 'Eng. Roberto Alcantara (Diretor Industrial)', 'Aprovado para cotação imediata com foco em prazo e qualidade');
 
+    // 1.1 Solicitação Demo 2 (Pendente de Aprovação - Reposição de Tubos Estruturais)
+    const sol2 = this.criarSolicitacao(empresaTritech, {
+      tipoGeracao: 'ORDEM_PRODUCAO',
+      prioridade: 'EMERGENCIAL',
+      solicitanteNome: 'Marcos Vinicius (Engenharia & PCP)',
+      departamento: 'Engenharia de Fabricação',
+      dataNecessidade: '2026-03-10',
+      justificativa: 'Aquisição emergencial de perfis tubulares estruturais para estrutura da Caldeiraria Pesada OP-2026-1088',
+      numeroOp: 'OP-2026-1088',
+      clienteNome: 'Usiminas Mecânica S.A.',
+      itens: [
+        {
+          produtoId: 'prod-tubo-quad-100-475',
+          codigoProduto: 'MP-TB-QUAD-100X100-4.75',
+          descricao: 'Tubo Estrutural Quadrado 100x100x4.75mm NBR 8261',
+          quantidade: 16,
+          unidadeMedida: 'BARRA_6M',
+          precoEstimadoUnitario: 480,
+          centroCustoId: 'CC-PROD-CORTE',
+        },
+        {
+          produtoId: 'prod-eletrodo-7018',
+          codigoProduto: 'CS-EL-E7018-3.25',
+          descricao: 'Eletrodo Revestido AWS E7018 3.25mm',
+          quantidade: 50,
+          unidadeMedida: 'KG',
+          precoEstimadoUnitario: 38,
+          centroCustoId: 'CC-PROD-SOLDAGEM',
+        },
+      ],
+    });
+    sol2.status = 'PENDENTE_APROVACAO';
+
     // 2. Cotação Demo vinculada
     const cotacaoDemo = this.criarCotacao(empresaTritech, {
       solicitacaoId: sol1.id,

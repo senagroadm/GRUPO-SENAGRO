@@ -38,6 +38,11 @@ import {
   DollarSign,
   Package,
   Check,
+  Barcode,
+  QrCode,
+  Scan,
+  Truck,
+  Boxes,
 } from 'lucide-react';
 import { Empresa, EMPRESAS_GRUPO } from '@/backend/core/types/company';
 import { safeFetchJson } from '../api/safe-fetch';
@@ -56,6 +61,7 @@ import {
   ModeloDocumentoFiscal,
   PreValidacaoResult,
   InutilizacaoRequest,
+  XmlNFeParsed,
 } from '@/backend/modules/fiscal/fiscal-types';
 import { DanfeViewerModal } from './DanfeViewerModal';
 
@@ -168,7 +174,11 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
   const [inutilizando, setInutilizando] = useState(false);
   const [feedbackInutilizacao, setFeedbackInutilizacao] = useState<{ sucesso: boolean; mensagem: string } | null>(null);
 
-  // Formulário de Importação de XML
+  // Formulário de Importação de XML & Código de Barras
+  const [modoEntradaNFe, setModoEntradaNFe] = useState<'XML' | 'CODIGO_BARRAS'>('CODIGO_BARRAS');
+  const [chaveAcessoInput, setChaveAcessoInput] = useState('');
+  const [parsedNFePreview, setParsedNFePreview] = useState<XmlNFeParsed | null>(null);
+  const [analisandoPreview, setAnalisandoPreview] = useState(false);
   const [xmlText, setXmlText] = useState('');
   const [importandoXml, setImportandoXml] = useState(false);
   const [feedbackImportacao, setFeedbackImportacao] = useState<{ sucesso: boolean; mensagem: string; data?: any } | null>(null);
@@ -376,6 +386,122 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
     }
   };
 
+  // Pré-visualização de XML
+  const handleParseXmlPreview = async (conteudoXmlOverride?: string) => {
+    const xml = conteudoXmlOverride !== undefined ? conteudoXmlOverride : xmlText;
+    if (!xml.trim()) return;
+    setAnalisandoPreview(true);
+    setFeedbackImportacao(null);
+    try {
+      const res = await fetch('/api/v1/fiscal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: empresaAtiva.id,
+          action: 'parse-xml-preview',
+          xmlConteudo: xml,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setParsedNFePreview(json.data);
+      } else {
+        setFeedbackImportacao({ sucesso: false, mensagem: json.error || 'Erro ao analisar arquivo XML.' });
+      }
+    } catch (err: any) {
+      setFeedbackImportacao({ sucesso: false, mensagem: err.message });
+    } finally {
+      setAnalisandoPreview(false);
+    }
+  };
+
+  // Upload de arquivo XML direto
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setXmlText(text);
+        handleParseXmlPreview(text);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Consulta por Código de Barras / Chave de Acesso (44 dígitos)
+  const handleConsultarChavePreview = async (chaveSobrescrita?: string) => {
+    const chave = chaveSobrescrita || chaveAcessoInput.replace(/\D/g, '');
+    if (!chave || chave.length !== 44) {
+      setFeedbackImportacao({
+        sucesso: false,
+        mensagem: 'A chave de acesso deve conter exatamente 44 dígitos numéricos.',
+      });
+      return;
+    }
+    setAnalisandoPreview(true);
+    setFeedbackImportacao(null);
+    try {
+      const res = await fetch('/api/v1/fiscal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: empresaAtiva.id,
+          action: 'consultar-chave-preview',
+          chaveAcesso: chave,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setParsedNFePreview(json.data);
+      } else {
+        setFeedbackImportacao({ sucesso: false, mensagem: json.error || 'Erro ao consultar Chave de Acesso.' });
+      }
+    } catch (err: any) {
+      setFeedbackImportacao({ sucesso: false, mensagem: err.message });
+    } finally {
+      setAnalisandoPreview(false);
+    }
+  };
+
+  // Efetivar Importação por Chave de Acesso (Código de Barras)
+  const handleImportarPorChaveAcesso = async () => {
+    const chave = chaveAcessoInput.replace(/\D/g, '') || parsedNFePreview?.chaveAcesso;
+    if (!chave || chave.length !== 44) return;
+    setImportandoXml(true);
+    setFeedbackImportacao(null);
+    try {
+      const res = await fetch('/api/v1/fiscal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: empresaAtiva.id,
+          action: 'importar-chave',
+          chaveAcesso: chave,
+          usuarioId: 'usr-leitor-danfe',
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFeedbackImportacao({
+          sucesso: true,
+          mensagem: json.data.mensagem || 'Entrada por Código de Barras concluída com sucesso!',
+          data: json.data,
+        });
+        setChaveAcessoInput('');
+        setParsedNFePreview(null);
+        await carregarDados();
+      } else {
+        setFeedbackImportacao({ sucesso: false, mensagem: json.error || 'Falha ao processar Chave de Acesso.' });
+      }
+    } catch (err: any) {
+      setFeedbackImportacao({ sucesso: false, mensagem: err.message });
+    } finally {
+      setImportandoXml(false);
+    }
+  };
+
   // Importação de XML
   const handleImportarXml = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,6 +527,7 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
           data: json.data,
         });
         setXmlText('');
+        setParsedNFePreview(null);
         await carregarDados();
       } else {
         setFeedbackImportacao({ sucesso: false, mensagem: json.error || 'Falha ao processar arquivo XML.' });
@@ -538,6 +665,7 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
   </infNFe>
 </NFe>`;
     setXmlText(xmlMock);
+    handleParseXmlPreview(xmlMock);
   };
 
   // Filtragem de Documentos
@@ -570,14 +698,7 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold tracking-tight">Faturamento & Camada Fiscal Desacoplada</h2>
-                <span className="text-xs bg-emerald-500/20 text-emerald-300 font-semibold px-2.5 py-0.5 rounded border border-emerald-500/30">
-                  NEXUS FISCAL 4.2
-                </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Empresa Ativa: <span className="text-slate-200 font-semibold">{empresaAtiva.nomeFantasia}</span> ({empresaAtiva.cnpj}) •{' '}
-                {configuracao?.regimeTributario.replace('_', ' ')} • IE: {configuracao?.inscricaoEstadual}
-              </p>
             </div>
           </div>
         </div>
@@ -642,13 +763,14 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
         </button>
 
         <button
+          id="tab-entrada-nfe"
           onClick={() => setActiveSubTab('importar_xml')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition whitespace-nowrap ${
             activeSubTab === 'importar_xml' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Upload className="w-4 h-4 text-sky-400" />
-          Importador de XML
+          <Barcode className="w-4 h-4 text-sky-400" />
+          Entrada NF-e (XML & Código de Barras)
         </button>
 
         <button
@@ -1371,61 +1493,524 @@ export function FiscalViewer({ empresaAtiva }: FiscalViewerProps) {
       )}
 
       {/* ========================================================= */}
-      {/* ABA 3: IMPORTADOR DE XML */}
+      {/* ABA 3: ENTRADA DE NF-E (XML & LEITOR DE CÓDIGO DE BARRAS) */}
       {/* ========================================================= */}
       {activeSubTab === 'importar_xml' && (
-        <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm">Importador de XML de Documentos Fiscais</h3>
-              <p className="text-xs text-slate-500">
-                Cole o conteúdo XML da NF-e para alimentar estoque automaticamente e registrar contas a pagar para a empresa{' '}
-                {empresaAtiva.nomeFantasia}.
-              </p>
-            </div>
-            <button
-              onClick={handleCarregarXmlExemplo}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-800 rounded transition"
-            >
-              Carregar XML de Exemplo
-            </button>
-          </div>
+        <div className="space-y-6">
+          {/* Cabeçalho do Importador */}
+          <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <Barcode className="w-5 h-5 text-sky-600" />
+                  Entrada de Notas Fiscais (Leitor de Código de Barras & XML)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Recebimento fiscal automatizado com rateio industrial de custos (Frete, Seguro, IPI e ICMS-ST),
+                  alimentação de estoque físico e geração de contas a pagar para <span className="font-semibold text-slate-700">{empresaAtiva.nomeFantasia}</span>.
+                </p>
+              </div>
 
-          <form onSubmit={handleImportarXml} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Conteúdo do Arquivo XML (procNFe ou infNFe):
-              </label>
-              <textarea
-                rows={12}
-                value={xmlText}
-                onChange={(e) => setXmlText(e.target.value)}
-                placeholder="<NFe xmlns='http://www.portalfiscal.inf.br/nfe'>..."
-                className="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-slate-500"
-              />
+              {/* Seletor de Modo */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 self-start sm:self-auto">
+                <button
+                  type="button"
+                  id="btn-modo-codigo-barras"
+                  onClick={() => {
+                    setModoEntradaNFe('CODIGO_BARRAS');
+                    setFeedbackImportacao(null);
+                  }}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                    modoEntradaNFe === 'CODIGO_BARRAS'
+                      ? 'bg-white text-sky-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Barcode className="w-4 h-4" />
+                  Código de Barras / Chave (44 Dígitos)
+                </button>
+                <button
+                  type="button"
+                  id="btn-modo-xml"
+                  onClick={() => {
+                    setModoEntradaNFe('XML');
+                    setFeedbackImportacao(null);
+                  }}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                    modoEntradaNFe === 'XML'
+                      ? 'bg-white text-sky-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <FileCode className="w-4 h-4" />
+                  Arquivo XML (Layout SEFAZ)
+                </button>
+              </div>
             </div>
+
+            {/* CONTEÚDO: MODO CÓDIGO DE BARRAS / CHAVE DE ACESSO */}
+            {modoEntradaNFe === 'CODIGO_BARRAS' && (
+              <div className="mt-5 space-y-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <Scan className="w-4 h-4 text-sky-600 animate-pulse" />
+                      Bipe com Leitor Óptico ou Digite a Chave de Acesso da DANFE:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${
+                          chaveAcessoInput.replace(/\D/g, '').length === 44
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}
+                      >
+                        {chaveAcessoInput.replace(/\D/g, '').length} / 44 dígitos
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        id="input-chave-acesso-nfe"
+                        value={chaveAcessoInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setChaveAcessoInput(val);
+                          const digits = val.replace(/\D/g, '');
+                          if (digits.length === 44) {
+                            handleConsultarChavePreview(digits);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleConsultarChavePreview();
+                          }
+                        }}
+                        placeholder="Ex: 35260845890123000199550010000084501876543210"
+                        maxLength={54}
+                        className="w-full pl-3 pr-10 py-3 bg-white border-2 border-slate-300 focus:border-sky-500 rounded-lg font-mono text-sm tracking-wider text-slate-900 shadow-inner focus:outline-hidden transition"
+                        autoFocus
+                      />
+                      {chaveAcessoInput && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChaveAcessoInput('');
+                            setParsedNFePreview(null);
+                          }}
+                          className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      id="btn-consultar-chave-sefaz"
+                      disabled={analisandoPreview || chaveAcessoInput.replace(/\D/g, '').length !== 44}
+                      onClick={() => handleConsultarChavePreview()}
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-300 text-white font-bold text-xs rounded-lg transition shrink-0 shadow-xs"
+                    >
+                      <Search className={`w-4 h-4 ${analisandoPreview ? 'animate-spin' : ''}`} />
+                      {analisandoPreview ? 'Consultando...' : 'Consultar DANFE / SEFAZ'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chaveExemplo = '35260845890123000199550010000084501876543210';
+                        setChaveAcessoInput(chaveExemplo);
+                        handleConsultarChavePreview(chaveExemplo);
+                      }}
+                      className="px-3 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs rounded-lg transition shrink-0"
+                    >
+                      Simular Chave Exemplo
+                    </button>
+                  </div>
+
+                  {/* Decomposição Visual da Chave */}
+                  {chaveAcessoInput.replace(/\D/g, '').length === 44 && (
+                    <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 text-[11px]">
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">UF</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(0, 2)} (SP)
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Ano/Mês</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(2, 6)}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200 col-span-2">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">CNPJ Emitente</span>
+                        <span className="font-mono font-bold text-slate-800 truncate block">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(6, 20)}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Mod / Série</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(20, 22)} / {parseInt(chaveAcessoInput.replace(/\D/g, '').substring(22, 25), 10)}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Número NF</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {parseInt(chaveAcessoInput.replace(/\D/g, '').substring(25, 34), 10)}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Emissão</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(34, 35) === '1' ? 'Normal' : 'Contingência'}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Dígito (DV)</span>
+                        <span className="font-mono font-bold text-emerald-600">
+                          {chaveAcessoInput.replace(/\D/g, '').substring(43, 44)} (Válido)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* CONTEÚDO: MODO UPLOAD / TEXTO XML */}
+            {modoEntradaNFe === 'XML' && (
+              <div className="mt-5 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <label className="flex-1 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 hover:border-sky-500 bg-slate-50 hover:bg-sky-50/50 rounded-xl cursor-pointer transition text-center">
+                    <Upload className="w-5 h-5 text-sky-600" />
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">
+                        Selecionar Arquivo .XML ou Arrastar para cá
+                      </span>
+                      <span className="text-[10px] text-slate-500">Padrão SEFAZ NF-e 4.00 (procNFe ou infNFe)</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".xml,text/xml"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={handleCarregarXmlExemplo}
+                    className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl border border-slate-200 transition shrink-0"
+                  >
+                    Carregar XML de Exemplo
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ou Cole o Conteúdo do XML Abaixo:
+                  </label>
+                  <textarea
+                    rows={8}
+                    value={xmlText}
+                    onChange={(e) => {
+                      setXmlText(e.target.value);
+                      if (e.target.value.includes('<infNFe') || e.target.value.includes('<NFe')) {
+                        handleParseXmlPreview(e.target.value);
+                      }
+                    }}
+                    placeholder="<nfeProc xmlns='http://www.portalfiscal.inf.br/nfe'>..."
+                    className="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-slate-500"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={analisandoPreview || !xmlText.trim()}
+                    onClick={() => handleParseXmlPreview()}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg transition"
+                  >
+                    <Search className={`w-4 h-4 ${analisandoPreview ? 'animate-spin' : ''}`} />
+                    {analisandoPreview ? 'Analisando XML...' : 'Analisar Estrutura do XML'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {feedbackImportacao && (
               <div
-                className={`p-3 rounded-lg text-xs font-medium border ${
+                className={`mt-4 p-4 rounded-xl text-xs font-medium border flex items-start gap-3 ${
                   feedbackImportacao.sucesso
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
                     : 'bg-rose-50 border-rose-300 text-rose-900'
                 }`}
               >
-                {feedbackImportacao.mensagem}
+                {feedbackImportacao.sucesso ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <div className="font-bold">{feedbackImportacao.mensagem}</div>
+                  {feedbackImportacao.data && feedbackImportacao.data.movimentosEstoqueIds && (
+                    <div className="mt-1 text-[11px] text-emerald-800 space-y-0.5">
+                      <div>• Movimento de Estoque Gerado: <span className="font-mono">{feedbackImportacao.data.movimentosEstoqueIds.join(', ')}</span></div>
+                      {feedbackImportacao.data.titulosFinanceirosIds && feedbackImportacao.data.titulosFinanceirosIds.length > 0 && (
+                        <div>• Título Financeiro Contas a Pagar: <span className="font-mono">{feedbackImportacao.data.titulosFinanceirosIds.join(', ')}</span></div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+          </div>
 
-            <button
-              type="submit"
-              disabled={importandoXml || !xmlText.trim()}
-              className="flex items-center gap-2 px-6 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-lg transition"
-            >
-              <Upload className="w-4 h-4" />
-              {importandoXml ? 'Processando XML...' : 'Importar Documento & Atualizar Estoque'}
-            </button>
-          </form>
+          {/* PAINEL DE CONFERÊNCIA FISCAL E RATEIO INDUSTRIAL */}
+          {parsedNFePreview && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
+              {/* Header do Card */}
+              <div className="bg-slate-900 text-white p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-2.5 py-1 bg-sky-600 text-white font-bold text-xs rounded">
+                      NF-e {parsedNFePreview.numeroDocumento} / Série {parsedNFePreview.serie}
+                    </span>
+                    <span className="text-xs text-slate-300 font-mono">
+                      Chave: {parsedNFePreview.chaveAcesso}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-base mt-1 text-slate-100">
+                    {parsedNFePreview.naturezaOperacao}
+                  </h4>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[11px] text-slate-400 block">Valor Total da Nota</span>
+                  <span className="font-bold font-mono text-xl text-emerald-400">
+                    R$ {parsedNFePreview.totais.valorTotalNota.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Grid Fornecedor e Destinatário */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Emitente (Fornecedor) */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-sky-600" />
+                        Fornecedor (Emitente)
+                      </span>
+                      <span className="font-mono text-[11px] text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        CNPJ: {parsedNFePreview.emitente.cnpjCpf}
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-sm">{parsedNFePreview.emitente.razaoSocialNome}</div>
+                    {parsedNFePreview.emitente.inscricaoEstadual && (
+                      <div className="text-slate-600">IE: {parsedNFePreview.emitente.inscricaoEstadual}</div>
+                    )}
+                    <div className="text-slate-500">
+                      {parsedNFePreview.emitente.logradouro}, {parsedNFePreview.emitente.numero} - {parsedNFePreview.emitente.bairro}, {parsedNFePreview.emitente.municipio}/{parsedNFePreview.emitente.uf}
+                    </div>
+                  </div>
+
+                  {/* Destinatário (Nossa Empresa) */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-emerald-600" />
+                        Destinatário (Nossa Empresa)
+                      </span>
+                      <span className="font-mono text-[11px] text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        CNPJ: {parsedNFePreview.destinatario.cnpjCpf}
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-sm">{parsedNFePreview.destinatario.razaoSocialNome}</div>
+                    <div className="text-slate-500">
+                      {parsedNFePreview.destinatario.logradouro}, {parsedNFePreview.destinatario.numero} - {parsedNFePreview.destinatario.municipio}/{parsedNFePreview.destinatario.uf}
+                    </div>
+                    <div className="text-emerald-700 font-semibold mt-1">
+                      Destino de Entrada: Almoxarifado Principal de Matéria-Prima ({empresaAtiva.nomeFantasia})
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grade de Itens da Nota e Rateio de Custo */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                      <Boxes className="w-4 h-4 text-sky-600" />
+                      Itens Extraídos & Custo Unitário de Aquisição com Rateio Industrial ({parsedNFePreview.itens.length})
+                    </h5>
+                    <span className="text-[11px] text-slate-500">
+                      * Custo = Preço - Desconto + Frete + Seguro + IPI + ST
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 text-[11px]">
+                        <tr>
+                          <th className="py-2.5 px-3">Item / Código</th>
+                          <th className="py-2.5 px-3">Descrição do Produto</th>
+                          <th className="py-2.5 px-3">NCM / CFOP</th>
+                          <th className="py-2.5 px-3 text-right">Qtd / UN</th>
+                          <th className="py-2.5 px-3 text-right">Preço Unit.</th>
+                          <th className="py-2.5 px-3 text-right">Frete/Seg Rateado</th>
+                          <th className="py-2.5 px-3 text-right">IPI Rateado</th>
+                          <th className="py-2.5 px-3 text-right bg-emerald-50 text-emerald-900 font-extrabold">Custo Aquisição Unit.</th>
+                          <th className="py-2.5 px-3 text-right">Total Item</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {parsedNFePreview.itens.map((it) => (
+                          <tr key={it.numeroItem} className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                              #{it.numeroItem} - {it.codigoProduto}
+                              {it.loteNumero && (
+                                <span className="block text-[10px] text-sky-600 font-sans">Lote: {it.loteNumero}</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-900 font-medium">
+                              {it.descricao}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
+                              NCM: {it.ncm} | CFOP: {it.cfop}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                              {it.quantidade.toLocaleString('pt-BR')} {it.unidadeMedida}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                              R$ {it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-600 text-[11px]">
+                              + R$ {(it.valorFreteRateado + it.valorSeguroRateado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-600 text-[11px]">
+                              + R$ {it.valorIpi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700 bg-emerald-50/70">
+                              R$ {it.custoAquisicaoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 4 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                              R$ {it.custoAquisicaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Resumo de Totais Fiscais & Financeiro */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Totais Fiscais */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                    <span className="font-bold text-slate-800 block border-b border-slate-200 pb-1">
+                      Totais da Nota Fiscal (SEFAZ)
+                    </span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-slate-700">
+                      <div className="flex justify-between">
+                        <span>Total dos Produtos:</span>
+                        <span className="font-semibold">R$ {parsedNFePreview.totais.valorProdutos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Frete Total:</span>
+                        <span className="font-semibold">R$ {parsedNFePreview.totais.valorFrete.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Seguro / Despesas:</span>
+                        <span className="font-semibold">R$ {(parsedNFePreview.totais.valorSeguro + (parsedNFePreview.totais.valorOutrasDespesas || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Descontos:</span>
+                        <span className="font-semibold text-rose-600">- R$ {parsedNFePreview.totais.valorDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>IPI Total:</span>
+                        <span className="font-semibold">R$ {parsedNFePreview.totais.valorIpi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>ICMS Total:</span>
+                        <span className="font-semibold">R$ {parsedNFePreview.totais.valorIcms.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financeiro (Contas a Pagar / Duplicatas) */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                    <span className="font-bold text-slate-800 block border-b border-slate-200 pb-1 flex items-center justify-between">
+                      <span>Condição de Pagamento (Contas a Pagar)</span>
+                      <span className="text-[10px] text-slate-500 font-normal">
+                        {parsedNFePreview.cobranca?.duplicatas.length || 1} Parcela(s)
+                      </span>
+                    </span>
+                    <div className="space-y-1.5">
+                      {parsedNFePreview.cobranca?.duplicatas.map((dup, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 bg-white rounded border border-slate-200 text-xs">
+                          <span className="font-bold text-slate-700">Duplicata {dup.numero}</span>
+                          <span className="text-slate-500 font-mono">Vencimento: {dup.vencimento}</span>
+                          <span className="font-bold font-mono text-slate-900">
+                            R$ {dup.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botões de Ação Final */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParsedNFePreview(null);
+                      setXmlText('');
+                      setChaveAcessoInput('');
+                    }}
+                    className="px-4 py-2.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                  >
+                    Descartar Conferência
+                  </button>
+
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    {modoEntradaNFe === 'CODIGO_BARRAS' ? (
+                      <button
+                        type="button"
+                        id="btn-confirmar-entrada-nfe"
+                        disabled={importandoXml}
+                        onClick={handleImportarPorChaveAcesso}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                      >
+                        <Check className="w-4 h-4" />
+                        {importandoXml ? 'Efetivando Entrada...' : 'Confirmar Entrada no Estoque & Gerar Contas a Pagar'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        id="btn-confirmar-entrada-nfe-xml"
+                        disabled={importandoXml}
+                        onClick={handleImportarXml}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                      >
+                        <Check className="w-4 h-4" />
+                        {importandoXml ? 'Efetivando Entrada...' : 'Confirmar Entrada no Estoque & Gerar Contas a Pagar'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -26,6 +26,12 @@ import {
   Check,
   Scale,
   RefreshCw,
+  Calculator,
+  Receipt,
+  RotateCcw,
+  CalendarCheck,
+  FileCheck,
+  PackageCheck,
 } from 'lucide-react';
 import {
   Expedicao,
@@ -43,13 +49,36 @@ import {
 } from '@/backend/modules/expedicao/expedicao-types';
 import { Empresa } from '@/backend/core/types/company';
 import { safeFetchJson } from '../api/safe-fetch';
+import { BiLogisticaAvancado } from './expedicao/BiLogisticaAvancado';
+import { RoteirizadorConsolidacao } from './expedicao/RoteirizadorConsolidacao';
+import { CotacaoComparativaFrete } from './expedicao/CotacaoComparativaFrete';
+import { AuditoriaFaturasFrete } from './expedicao/AuditoriaFaturasFrete';
+import { GestaoLogisticaReversa } from './expedicao/GestaoLogisticaReversa';
+import { AgendamentoDocaPatio } from './expedicao/AgendamentoDocaPatio';
+import { ConferenciaCegaBipagem } from './expedicao/ConferenciaCegaBipagem';
+import { EmissaoMdfeRomaneio } from './expedicao/EmissaoMdfeRomaneio';
+import { CanhotoDigitalPod } from './expedicao/CanhotoDigitalPod';
 
 interface ExpedicaoViewerProps {
   empresaAtiva: Empresa;
 }
 
 export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'kpis' | 'fluxo' | 'cargas' | 'tracking' | 'cadastros' | 'simulador'>('kpis');
+  const [activeSubTab, setActiveSubTab] = useState<
+    | 'kpis'
+    | 'conferencia'
+    | 'roteirizador'
+    | 'cargas'
+    | 'mdfe'
+    | 'fluxo'
+    | 'tracking'
+    | 'pod'
+    | 'cotacoes'
+    | 'auditoria'
+    | 'reversa'
+    | 'docas'
+    | 'cadastros'
+  >('kpis');
   const [expedicoes, setExpedicoes] = useState<Expedicao[]>([]);
   const [cargas, setCargas] = useState<CargaExpedicao[]>([]);
   const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
@@ -243,9 +272,6 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
             </span>
             <div>
               <h1 className="text-xl font-bold text-slate-900">Expedição, TMS & Logística de Cargas</h1>
-              <p className="text-xs text-slate-500">
-                Torre de controle operacional: Separação, Conferência, Volumes/Etiquetas GS1, Romaneio, Rastreamento, OTIF e Custos de Frete.
-              </p>
             </div>
           </div>
         </div>
@@ -273,12 +299,19 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
       {/* Navigation Sub-Tabs */}
       <div className="flex border-b border-slate-200 gap-2 overflow-x-auto pb-0.5">
         {[
-          { id: 'kpis', label: 'Torre de Controle & OTIF', icon: TrendingUp },
-          { id: 'fluxo', label: 'Fluxo Operacional (Pipeline)', icon: Boxes },
+          { id: 'kpis', label: 'Torre de Controle & OTIF (BI)', icon: TrendingUp },
+          { id: 'conferencia', label: 'Conferência Cega & Packing Station', icon: Barcode },
+          { id: 'roteirizador', label: 'Roteirizador & Consolidação', icon: Compass },
           { id: 'cargas', label: 'Cargas & Romaneios', icon: Layers },
-          { id: 'tracking', label: 'Rastreamento & Ocorrências', icon: Compass },
+          { id: 'mdfe', label: 'Emissão MDF-e & Averbação', icon: FileText },
+          { id: 'fluxo', label: 'Fluxo Operacional (Pipeline)', icon: Boxes },
+          { id: 'tracking', label: 'Rastreamento & Ocorrências', icon: MapPin },
+          { id: 'pod', label: 'Canhoto Digital (POD)', icon: FileCheck },
+          { id: 'cotacoes', label: 'Cotação Comparativa Multi-Transportadora', icon: Calculator },
+          { id: 'auditoria', label: 'Auditoria CT-e (Pre-Billing)', icon: Receipt },
+          { id: 'reversa', label: 'Logística Reversa (RMA)', icon: RotateCcw },
+          { id: 'docas', label: 'Agendamento de Docas (YMS)', icon: CalendarCheck },
           { id: 'cadastros', label: 'Transportadoras & Frota', icon: Building2 },
-          { id: 'simulador', label: 'Simulador de Frete (CIF/FOB)', icon: DollarSign },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -287,7 +320,7 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
               key={tab.id}
               id={`${prefix}-tab-${tab.id}`}
               onClick={() => setActiveSubTab(tab.id as any)}
-              className={`px-4 py-3 text-xs font-semibold flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+              className={`px-3.5 py-2.5 text-xs font-semibold flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
                 isActive
                   ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50 rounded-t-lg'
                   : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
@@ -300,157 +333,29 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
         })}
       </div>
 
-      {/* TAB 1: TORRE DE CONTROLE & OTIF */}
+      {/* TAB 1: TORRE DE CONTROLE, BI & OTIF AVANÇADO */}
       {activeSubTab === 'kpis' && indicadores && (
-        <div className="space-y-6">
-          {/* Top KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Índice OTIF Geral</span>
-                <span className={`p-1.5 rounded-md ${indicadores.taxaOtifGeral >= 90 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                  <TrendingUp className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">{indicadores.taxaOtifGeral}%</span>
-                <span className="text-xs text-slate-500">Meta: ≥ 95.0%</span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs border-t border-slate-100 pt-2 text-slate-600">
-                <span>On-Time: <strong>{indicadores.taxaOnTime}%</strong></span>
-                <span>In-Full: <strong>{indicadores.taxaInFull}%</strong></span>
-              </div>
-            </div>
+        <BiLogisticaAvancado
+          empresaAtiva={empresaAtiva}
+          expedicoes={expedicoes}
+          transportadoras={transportadoras}
+          indicadores={indicadores}
+        />
+      )}
 
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Frete Previsto x Real</span>
-                <span className="p-1.5 bg-blue-50 text-blue-600 rounded-md">
-                  <DollarSign className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">
-                  R$ {indicadores.custoFreteRealTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs border-t border-slate-100 pt-2">
-                <span className="text-slate-500">Previsto: R$ {indicadores.custoFretePrevistoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                <span className={`font-bold ${indicadores.variacaoFreteTotal <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {indicadores.variacaoFretePercentual > 0 ? `+${indicadores.variacaoFretePercentual}%` : `${indicadores.variacaoFretePercentual}%`}
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Massa & Volumes</span>
-                <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-md">
-                  <Scale className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">
-                  {(indicadores.pesoTotalExpedidoKg / 1000).toFixed(2)} ton
-                </span>
-                <span className="text-xs text-slate-500">{indicadores.totalVolumesExpedidos} volumes</span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs border-t border-slate-100 pt-2 text-slate-600">
-                <span>Custo Médio / kg:</span>
-                <strong className="text-slate-800">R$ {indicadores.custoMedioPorKg.toFixed(2)}/kg</strong>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ocorrências & Avarias</span>
-                <span className="p-1.5 bg-rose-50 text-rose-600 rounded-md">
-                  <ShieldAlert className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">{indicadores.totalOcorrencias}</span>
-                <span className="text-xs text-rose-600 font-medium">registradas</span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs border-t border-slate-100 pt-2 text-slate-600">
-                <span>Em Trânsito: <strong>{indicadores.expedicoesEmTransito}</strong></span>
-                <span>Entregues: <strong>{indicadores.expedicoesEntregues}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Deep Dives: OTIF breakdown and root cause */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-              <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Composição do Desempenho Logístico (OTIF)
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-slate-700">On-Time (Entregas rigorosamente no prazo prometido)</span>
-                    <span className="text-slate-900 font-bold">{indicadores.taxaOnTime}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: `${indicadores.taxaOnTime}%` }}></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-slate-700">In-Full (Entregas com 100% dos itens sem avaria ou falta)</span>
-                    <span className="text-slate-900 font-bold">{indicadores.taxaInFull}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${indicadores.taxaInFull}%` }}></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-slate-900 font-bold">OTIF Global (On-Time AND In-Full)</span>
-                    <span className="text-indigo-600 font-black">{indicadores.taxaOtifGeral}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden">
-                    <div className="bg-indigo-600 h-3.5 rounded-full" style={{ width: `${indicadores.taxaOtifGeral}%` }}></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 p-3 bg-slate-50 rounded-lg text-xs text-slate-600">
-                <p>
-                  <strong>Regra de Cálculo OTIF:</strong> Uma remessa é considerada conforme somente se a data efetiva de entrega com canhoto for menor ou igual à data prometida <em>e</em> se não houver ressalvas de peças avariadas ou faltantes.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-              <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Matriz de Causas de Perda OTIF & Avarias
-              </h2>
-
-              <div className="space-y-3">
-                {indicadores.causasPerdaOTIF.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-2.5 border border-slate-100 rounded-lg hover:bg-slate-50 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                      <span className="font-medium text-slate-800">{c.causa}</span>
-                    </div>
-                    <span className="font-bold text-slate-900">{c.impactoPercentual}% das perdas</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between text-xs pt-3 border-t border-slate-100 text-slate-500">
-                <span>RNCs de Qualidade Geradas: <strong>1 ativa</strong></span>
-                <span>Logística Reversa Acionada: <strong>1 caso</strong></span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* TAB 2: PLANEJADOR DE ROTEIRIZAÇÃO & CONSOLIDAÇÃO DE CARGAS */}
+      {activeSubTab === 'roteirizador' && (
+        <RoteirizadorConsolidacao
+          empresaAtiva={empresaAtiva}
+          expedicoes={expedicoes}
+          transportadoras={transportadoras}
+          veiculos={veiculos}
+          motoristas={motoristas}
+          onCargaCriada={(novaCarga) => {
+            setCargas((prev) => [novaCarga, ...prev]);
+            carregarDados();
+          }}
+        />
       )}
 
       {/* TAB 2: FLUXO OPERACIONAL (PIPELINE) */}
@@ -1008,92 +913,81 @@ export function ExpedicaoViewer({ empresaAtiva }: ExpedicaoViewerProps) {
         </div>
       )}
 
-      {/* TAB 6: SIMULADOR DE FRETE */}
-      {activeSubTab === 'simulador' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-6 max-w-3xl mx-auto">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Simulador de Frete Industrial (CIF x FOB)</h2>
-            <p className="text-xs text-slate-500">Cálculo de cubagem (Fator 300 kg/m³), peso tarifado, Ad-Valorem, GRIS, Pedágio e Despacho.</p>
-          </div>
+      {/* TAB: CONFERÊNCIA CEGA & PACKING STATION (GARGALO OPERACIONAL 1) */}
+      {activeSubTab === 'conferencia' && (
+        <ConferenciaCegaBipagem
+          empresaAtiva={empresaAtiva}
+          expedicoes={expedicoes}
+          onFinalizarConferencia={async (expId, pesoKg, volumes) => {
+            await executarAcao('finalizar_conferencia', {
+              expedicaoId: expId,
+              pesoAferidoBalancaKg: pesoKg,
+              volumes,
+            });
+          }}
+          onImprimirEtiqueta={(vol) => {
+            window.print();
+          }}
+        />
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Peso Real da Carga (kg):</label>
-              <input
-                id={`${prefix}-input-sim-peso`}
-                type="number"
-                value={simPeso}
-                onChange={(e) => setSimPeso(Number(e.target.value))}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Volume Total da Carga (m³):</label>
-              <input
-                id={`${prefix}-input-sim-vol`}
-                type="number"
-                step="0.1"
-                value={simVolM3}
-                onChange={(e) => setSimVolM3(Number(e.target.value))}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Valor da Mercadoria / NF (R$):</label>
-              <input
-                id={`${prefix}-input-sim-val`}
-                type="number"
-                value={simValor}
-                onChange={(e) => setSimValor(Number(e.target.value))}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">UF Destino:</label>
-              <select
-                id={`${prefix}-select-sim-uf`}
-                value={simUF}
-                onChange={(e) => setSimUF(e.target.value)}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg bg-white"
-              >
-                <option value="SP">São Paulo (SP)</option>
-                <option value="PR">Paraná (PR)</option>
-                <option value="MG">Minas Gerais (MG)</option>
-                <option value="RJ">Rio de Janeiro (RJ)</option>
-                <option value="SC">Santa Catarina (SC)</option>
-                <option value="RS">Rio Grande do Sul (RS)</option>
-              </select>
-            </div>
-          </div>
+      {/* TAB: EMISSÃO MDF-E & ROMANEIOS UNIFICADOS (GARGALO OPERACIONAL 2) */}
+      {activeSubTab === 'mdfe' && (
+        <EmissaoMdfeRomaneio
+          empresaAtiva={empresaAtiva}
+          cargas={cargas}
+          transportadoras={transportadoras}
+          veiculos={veiculos}
+          motoristas={motoristas}
+        />
+      )}
 
-          <button
-            id={`${prefix}-btn-calcular-sim`}
-            onClick={simularFrete}
-            className="w-full py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
-          >
-            Calcular Cotação de Frete
-          </button>
+      {/* TAB: CANHOTO DIGITAL & COMPROVAÇÃO POD (GARGALO OPERACIONAL 3) */}
+      {activeSubTab === 'pod' && (
+        <CanhotoDigitalPod
+          empresaAtiva={empresaAtiva}
+          expedicoes={expedicoes}
+          onConfirmarEntregaPod={async (expId, podData) => {
+            await executarAcao('registrar_entrega_pod', {
+              expedicaoId: expId,
+              pod: podData,
+            });
+          }}
+        />
+      )}
 
-          {simResultado && (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <span className="text-xs font-bold text-slate-700">Transportadora Sugerida: {simResultado.transportadoraNome}</span>
-                <span className="text-base font-black text-indigo-700">
-                  R$ {simResultado.valorFretePrevisto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-600">
-                <div>Peso Real: <strong>{simResultado.pesoRealTotalKg} kg</strong></div>
-                <div>Peso Cubado: <strong>{simResultado.pesoCubadoTotalKg} kg</strong></div>
-                <div>Base Tarifada: <strong>{simResultado.baseCalculoKg} kg</strong></div>
-                <div>Ad-Valorem: <strong>R$ {simResultado.adValoremValor}</strong></div>
-                <div>GRIS (Risco): <strong>R$ {simResultado.grisValor}</strong></div>
-                <div>Pedágio: <strong>R$ {simResultado.pedagioValor}</strong></div>
-                <div>Despacho: <strong>R$ {simResultado.taxaDespachoValor}</strong></div>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* TAB 6: COTAÇÕES COMPARATIVAS MULTI-TRANSPORTADORA */}
+      {activeSubTab === 'cotacoes' && (
+        <CotacaoComparativaFrete
+          empresaAtiva={empresaAtiva}
+          transportadoras={transportadoras}
+          tabelasFrete={tabelasFrete}
+        />
+      )}
+
+      {/* TAB 7: AUDITORIA DE FATURAS & CONCILIAÇÃO CT-E */}
+      {activeSubTab === 'auditoria' && (
+        <AuditoriaFaturasFrete
+          empresaAtiva={empresaAtiva}
+          transportadoras={transportadoras}
+        />
+      )}
+
+      {/* TAB 8: LOGÍSTICA REVERSA & DEVOLUÇÕES (RMA) */}
+      {activeSubTab === 'reversa' && (
+        <GestaoLogisticaReversa
+          empresaAtiva={empresaAtiva}
+        />
+      )}
+
+      {/* TAB 9: AGENDAMENTO DE DOCAS & GESTÃO DE PÁTIO (YMS) */}
+      {activeSubTab === 'docas' && (
+        <AgendamentoDocaPatio
+          empresaAtiva={empresaAtiva}
+          transportadoras={transportadoras}
+          veiculos={veiculos}
+          motoristas={motoristas}
+        />
       )}
 
       {/* MODAL: CONFERÊNCIA & BIPAGEM */}

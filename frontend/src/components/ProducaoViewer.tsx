@@ -389,19 +389,9 @@ export function ProducaoViewer({ empresaId }: ProducaoViewerProps) {
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 text-xs font-bold bg-amber-100 text-amber-900 rounded-full flex items-center gap-1">
-                <Factory className="w-3.5 h-3.5" />
-                MÓDULO 10
-              </span>
-              <span className="text-xs text-slate-500 font-medium">Chão de Fábrica & Execução de OPs</span>
-            </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               Gestão da Produção & Chão de Fábrica
             </h1>
-            <p className="text-sm text-slate-600 max-w-3xl">
-              Execução em tempo real de Ordens de Produção (OPs totais e parciais), apontamentos de setup/ciclo, repasse sequencial de peças boas, registro de refugo, retrabalho, paradas de máquina e encerramento seguro.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

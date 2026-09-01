@@ -30,9 +30,12 @@ import {
   AlertCircle,
   UserCheck,
   Award,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { Empresa } from '../../../backend/core/types/company';
 import { safeFetchJson } from '../api/safe-fetch';
+import { converterLeadAction } from '@/app/actions/crm-actions';
 
 interface CrmDashboardMetrics {
   totalLeads: number;
@@ -164,6 +167,8 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const [showNovaAtivModal, setShowNovaAtivModal] = useState(false);
   const [showConvertLeadModal, setShowConvertLeadModal] = useState<CrmLead | null>(null);
   const [showPerdaModal, setShowPerdaModal] = useState<CrmOportunidade | null>(null);
+  const [isConvertingLead, setIsConvertingLead] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Form states
   const [novoLeadForm, setNovoLeadForm] = useState({
@@ -269,19 +274,72 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
   const handleConverterLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showConvertLeadModal) return;
+    setIsConvertingLead(true);
 
     try {
-      const res = await safeFetchJson(`/api/v1/crm/leads/${showConvertLeadModal.id}/converter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
-        body: JSON.stringify(convertForm),
+      // 1. Tenta via Server Action atômica (Supabase + CRM Service)
+      const res = await converterLeadAction({
+        leadId: showConvertLeadModal.id,
+        empresaId: empresaAtiva.id,
+        tituloOportunidade: convertForm.tituloOportunidade.trim(),
+        cnpjCpf: convertForm.cnpjCpf.trim(),
+        valorEstimado: Number(convertForm.valorEstimado) || 50000,
+        etapaInicialId: convertForm.etapaInicialId || auxiliares.etapasFunil[0]?.id,
+        leadData: {
+          nomeContato: showConvertLeadModal.nomeContato,
+          empresaLead: showConvertLeadModal.empresaLead,
+          email: showConvertLeadModal.email,
+          telefone: showConvertLeadModal.telefone,
+          cidade: showConvertLeadModal.cidade,
+          uf: showConvertLeadModal.uf,
+          segmentoIndustrial: showConvertLeadModal.segmentoIndustrial,
+          notas: showConvertLeadModal.notas,
+        },
       });
+
       if (res.success) {
         setShowConvertLeadModal(null);
-        carregarDadosCRM();
+        setToast({
+          type: 'success',
+          message: res.data?.mensagem || `Lead "${showConvertLeadModal.nomeContato}" convertido com sucesso em Cliente e Oportunidade!`,
+        });
+        await carregarDadosCRM();
+      } else {
+        // Fallback REST API
+        const apiRes = await safeFetchJson<{ success: boolean; data?: any; error?: string }>(
+          `/api/v1/crm/leads/${showConvertLeadModal.id}/converter`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
+            body: JSON.stringify({
+              ...convertForm,
+              leadData: showConvertLeadModal,
+            }),
+          }
+        );
+
+        if (apiRes.success) {
+          setShowConvertLeadModal(null);
+          setToast({
+            type: 'success',
+            message: `Lead convertido com sucesso em Cliente e Oportunidade!`,
+          });
+          await carregarDadosCRM();
+        } else {
+          setToast({
+            type: 'error',
+            message: res.error || apiRes.error || 'Falha ao converter lead.',
+          });
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao converter lead:', err);
+      setToast({
+        type: 'error',
+        message: err?.message || 'Erro inesperado na conversão do lead.',
+      });
+    } finally {
+      setIsConvertingLead(false);
     }
   };
 
@@ -424,6 +482,32 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
 
   return (
     <div id="crm-module-viewer" className="space-y-6">
+      {/* Toast Feedback */}
+      {toast && (
+        <div
+          className={`p-4 rounded-xl border flex items-center justify-between shadow-md transition-all ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : 'bg-rose-50 border-rose-200 text-rose-900'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            )}
+            <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 hover:bg-black/5 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -434,14 +518,7 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-slate-900">CRM Industrial & Ciclo Comercial</h2>
-                <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                  Sem IA • Regras Determinísticas
-                </span>
               </div>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Funil de vendas B2B, conversão de leads, follow-ups de obras e análise de perdas para{' '}
-                <span className="font-semibold text-slate-700">{empresaAtiva.nomeFantasia}</span>.
-              </p>
             </div>
           </div>
 
@@ -1022,16 +1099,19 @@ export function CrmViewer({ empresaAtiva }: { empresaAtiva: Empresa }) {
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
+                  disabled={isConvertingLead}
                   onClick={() => setShowConvertLeadModal(null)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition-colors"
+                  disabled={isConvertingLead}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
-                  Confirmar Conversão Atômica
+                  {isConvertingLead && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isConvertingLead ? 'Convertendo...' : 'Confirmar Conversão Atômica'}
                 </button>
               </div>
             </form>

@@ -1242,6 +1242,70 @@ export class FiscalService {
   }
 
   // ==========================================================
+  // ENTRADA DE NFE POR LEITURA DE CÓDIGO DE BARRAS / CHAVE DE ACESSO
+  // ==========================================================
+  public async importarChaveAcessoFiscal(
+    empresaId: string,
+    chaveAcesso: string,
+    usuarioId: string
+  ): Promise<ImportacaoXmlResult> {
+    try {
+      const parsed = xmlParserService.consultarOuGerarPorChaveAcesso(chaveAcesso);
+      const docFiscal = xmlParserService.converterXmlParaDocumentoFiscal(empresaId, parsed, usuarioId);
+
+      const docs = this.documentosFiscais.get(empresaId) || [];
+      docs.push(docFiscal);
+      this.documentosFiscais.set(empresaId, docs);
+
+      const operacaoImport: OperacaoFiscal = {
+        id: `op-chave-${empresaId}`,
+        empresaId,
+        codigoOperacao: 'COMPRA_INSUMOS',
+        descricaoNatureza: parsed.naturezaOperacao,
+        tipoOperacao: 'ENTRADA',
+        cfopPadraoEstadual: '1101',
+        cfopPadraoInterestadual: '2101',
+        cfopPadraoExterior: '3101',
+        finalidade: 'NORMAL',
+        movimentaEstoque: true,
+        geraFinanceiro: true,
+        consumidorFinalPadrao: false,
+        indicadorPresencaPadrao: 'OUTROS',
+        ativo: true,
+      };
+
+      const efeitos = await faturamentoIntegracaoService.processarEfeitosPosAutorizacao(
+        empresaId,
+        docFiscal,
+        operacaoImport,
+        usuarioId
+      );
+
+      return {
+        sucesso: true,
+        documentoId: docFiscal.id,
+        documentoParsed: parsed,
+        documentoCriado: docFiscal,
+        estoqueAtualizado: efeitos.estoqueAtualizado,
+        financeiroGerado: efeitos.financeiroGerado,
+        movimentosEstoqueIds: efeitos.movimentosEstoque.map((m) => m.id),
+        titulosFinanceirosIds: efeitos.titulosFinanceiros.map((t) => t.id),
+        mensagem: `NF-e ${parsed.numeroDocumento} (Chave: ${parsed.chaveAcesso.substring(0, 8)}...) processada via Código de Barras. Estoque e Contas a Pagar alimentados.`,
+      };
+    } catch (err: any) {
+      return {
+        sucesso: false,
+        estoqueAtualizado: false,
+        financeiroGerado: false,
+        movimentosEstoqueIds: [],
+        titulosFinanceirosIds: [],
+        mensagem: `Erro ao processar Chave de Acesso: ${err.message || err}`,
+        erros: [err.message || String(err)],
+      };
+    }
+  }
+
+  // ==========================================================
   // REPROCESSAMENTO SEGURO DE NOTA REJEITADA
   // ==========================================================
   public async reprocessarTentativaRejeitada(

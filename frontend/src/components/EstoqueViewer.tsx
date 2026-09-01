@@ -26,7 +26,9 @@ import {
   Sparkles,
   PlayCircle,
   FileCheck2,
+  FileCode2,
 } from 'lucide-react';
+import { ImportadorNfeModal } from './ImportadorNfeModal';
 import { Empresa } from '../../../backend/core/types/company';
 import { safeFetchJson } from '../api/safe-fetch';
 import {
@@ -76,6 +78,7 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
 
   // Modais de Ação
   const [modalNovoMovimento, setModalNovoMovimento] = useState<boolean>(false);
+  const [modalImportadorNfe, setModalImportadorNfe] = useState<boolean>(false);
   const [modalNovaReserva, setModalNovaReserva] = useState<boolean>(false);
   const [modalNovaChapa, setModalNovaChapa] = useState<boolean>(false);
   const [modalNovoRetalho, setModalNovoRetalho] = useState<boolean>(false);
@@ -512,23 +515,17 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
       {/* Top Banner de Contexto da Empresa Ativa */}
       <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 text-xs font-semibold rounded border border-amber-500/30 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" />
-              {empresaAtiva.codigo}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">CNPJ: {empresaAtiva.cnpj}</span>
-            <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
-              Saldo Negativo: {politica?.permiteSaldoNegativo ? 'PERMITIDO' : 'BLOQUEADO'}
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-white mt-1">Estoque Multiempresa & Governança de Materiais</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Saldos granulares por produto/local/lote, rastreabilidade de chapas e retalhos, sucatas, reservas e inventário físico.
-          </p>
+          <h2 className="text-xl font-bold text-white">Estoque Multiempresa e Governança de Materiais</h2>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setModalImportadorNfe(true)}
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
+          >
+            <FileCode2 className="w-4 h-4" />
+            Importar XML de NF-e
+          </button>
           <button
             onClick={() => setModalNovoMovimento(true)}
             className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
@@ -1487,6 +1484,27 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
             </div>
 
             <form onSubmit={handleExecutarMovimento} className="space-y-3 text-xs">
+              {/* Banner de Atalho para Importador de XML */}
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCode2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <div>
+                    <span className="font-bold text-emerald-900 block text-[11px]">Possui o arquivo XML da NF-e?</span>
+                    <span className="text-emerald-700 text-[10px]">Importe automaticamente com rateio de frete/IPI e De/Para.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalNovoMovimento(false);
+                    setModalImportadorNfe(true);
+                  }}
+                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-[11px] shrink-0"
+                >
+                  Importar XML
+                </button>
+              </div>
+
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">Tipo de Movimentação</label>
                 <select
@@ -2014,6 +2032,19 @@ export function EstoqueViewer({ empresaAtiva }: EstoqueViewerProps) {
           </div>
         </div>
       )}
+
+      {/* Modal de Importação de XML de NF-e (Inbound & Rateio) */}
+      <ImportadorNfeModal
+        empresaAtiva={empresaAtiva}
+        isOpen={modalImportadorNfe}
+        onClose={() => setModalImportadorNfe(false)}
+        onSuccess={() => {
+          carregarDadosEstoque();
+        }}
+        almoxarifados={almoxarifados}
+        localizacoes={localizacoes}
+        saldos={saldos}
+      />
     </div>
   );
 }

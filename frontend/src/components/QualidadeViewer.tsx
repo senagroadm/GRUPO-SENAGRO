@@ -408,9 +408,6 @@ export function QualidadeViewer({ empresaAtiva }: QualidadeViewerProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">Gestão da Qualidade & RNC (ISO 9001 / IATF)</h1>
-              <p className="text-xs text-slate-500">
-                Inspeção de Recebimento, Em Processo & Final • Não Conformidades • Ishikawa 6M • Retrabalho & Refugo
-              </p>
             </div>
           </div>
         </div>

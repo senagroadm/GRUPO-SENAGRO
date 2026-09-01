@@ -601,7 +601,7 @@ export function ObservabilidadeViewer() {
                   Política Estrita de Redação de Segredos
                 </div>
                 <p className="text-slate-400 text-[10px] leading-relaxed">
-                  O interceptor de logging do NEXUS ERP remove automaticamente senhas, chaves de API, certificados digitais e tokens JWT antes da persistência no storage de observabilidade.
+                  O interceptor de logging do GRUPO SENAGRO remove automaticamente senhas, chaves de API, certificados digitais e tokens JWT antes da persistência no storage de observabilidade.
                 </p>
               </div>
             </>

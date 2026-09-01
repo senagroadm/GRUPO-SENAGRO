@@ -222,6 +222,7 @@ export interface OrcamentoItem {
   // Observações específicas do item
   desenhoReferencia?: string;
   detalhesTecnicos?: string;
+  imagemUrl?: string | null;
 }
 
 /**

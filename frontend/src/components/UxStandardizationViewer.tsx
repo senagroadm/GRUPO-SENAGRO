@@ -92,7 +92,7 @@ export function UxStandardizationViewer() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleValidarPadrao = (titulo: string) => {
-    setFeedback(`Padrão [${titulo}] validado no Design System NEXUS (100% de conformidade com diretrizes).`);
+    setFeedback(`Padrão [${titulo}] validado no Design System SENAGRO (100% de conformidade com diretrizes).`);
     setTimeout(() => setFeedback(null), 4000);
   };
 
@@ -111,7 +111,7 @@ export function UxStandardizationViewer() {
                 Design System, UX & Padronização de Componentes
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Guia Unificado NEXUS
+                <Sparkles className="w-3 h-3" /> Guia Unificado SENAGRO
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -228,7 +228,7 @@ export function UxStandardizationViewer() {
               <Columns className="w-4 h-4 text-indigo-600" />
               Diretrizes & Padrões Estabelecidos ({padroes.length})
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">NEXUS-DS v2.0</span>
+            <span className="text-[10px] text-slate-400 font-mono">SENAGRO-DS v2.0</span>
           </div>
 
           <div className="space-y-2">

@@ -94,6 +94,7 @@ export interface SaldoEstoque {
 
 export type TipoMovimentoEstoque =
   | 'ENTRADA_COMPRA'
+  | 'ENTRADA_COMPRA_NFE'
   | 'ENTRADA_TRANSFERENCIA'
   | 'ENTRADA_AJUSTE_INVENTARIO'
   | 'ENTRADA_SOBRA_RETALHO'
@@ -144,6 +145,8 @@ export interface MovimentoEstoque {
   documentoOrigemTipo: TipoDocumentoOrigem;
   documentoOrigemId?: string;
   documentoOrigemNumero?: string;
+  chaveAcessoNfe?: string;
+  nfeItemId?: string;
 
   motivo: string;
   observacoes?: string;

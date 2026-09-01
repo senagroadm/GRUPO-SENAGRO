@@ -232,9 +232,6 @@ export function PcpViewer({ empresaId }: PcpViewerProps) {
                 <h1 className="text-xl font-bold text-slate-900">
                   Planejamento e Controle da Produção (PCP) & MRP Inicial
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Motor determinístico de cálculo de necessidades líquidas, sequenciamento de filas e matriz de riscos.
-                </p>
               </div>
             </div>
           </div>

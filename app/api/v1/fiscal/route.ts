@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fiscalService } from '@/backend/modules/fiscal/fiscal-service';
+import { xmlParserService } from '@/backend/modules/fiscal/xml-parser-service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -121,6 +122,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: result });
     }
 
+    if (action === 'parse-xml-preview') {
+      const { xmlConteudo } = body;
+      if (!xmlConteudo) {
+        return NextResponse.json({ success: false, error: 'Conteúdo XML é obrigatório' }, { status: 400 });
+      }
+      try {
+        const parsed = xmlParserService.parsearXmlNFe(xmlConteudo);
+        return NextResponse.json({ success: true, data: parsed });
+      } catch (err: any) {
+        return NextResponse.json({ success: false, error: err.message || 'Erro ao analisar XML' }, { status: 400 });
+      }
+    }
+
+    if (action === 'consultar-chave-preview') {
+      const { chaveAcesso } = body;
+      if (!chaveAcesso || chaveAcesso.replace(/\D/g, '').length !== 44) {
+        return NextResponse.json(
+          { success: false, error: 'Chave de Acesso de 44 dígitos é obrigatória' },
+          { status: 400 }
+        );
+      }
+      try {
+        const parsed = xmlParserService.consultarOuGerarPorChaveAcesso(chaveAcesso);
+        return NextResponse.json({ success: true, data: parsed });
+      } catch (err: any) {
+        return NextResponse.json({ success: false, error: err.message || 'Erro ao consultar Chave de Acesso' }, { status: 400 });
+      }
+    }
+
+    if (action === 'importar-chave') {
+      const { chaveAcesso, usuarioId } = body;
+      if (!chaveAcesso || chaveAcesso.replace(/\D/g, '').length !== 44) {
+        return NextResponse.json(
+          { success: false, error: 'Chave de Acesso de 44 dígitos é obrigatória' },
+          { status: 400 }
+        );
+      }
+      const result = await fiscalService.importarChaveAcessoFiscal(empresaId, chaveAcesso, usuarioId || 'usuario-sistema');
+      return NextResponse.json({ success: result.sucesso, data: result, error: result.sucesso ? undefined : result.mensagem });
+    }
+
     if (action === 'importar-xml') {
       const { xmlConteudo, usuarioId } = body;
       if (!xmlConteudo) {
@@ -164,6 +206,23 @@ export async function POST(req: NextRequest) {
         usuarioId || 'usuario-sistema'
       );
       return NextResponse.json({ success: true, data: result });
+    }
+
+    if (action === 'processar-xml-nfe') {
+      const { xmlConteudo, usuarioId } = body;
+      const { processarXmlNfe } = await import('@/app/actions/fiscal-actions');
+      const result = await processarXmlNfe(empresaId, xmlConteudo, usuarioId || 'usuario-sistema');
+      return NextResponse.json({ success: result.success, data: result, error: result.error });
+    }
+
+    if (action === 'efetivar-entrada-estoque') {
+      const { payload: entradaPayload } = body;
+      const { efetivarEntradaEstoque } = await import('@/app/actions/fiscal-actions');
+      const result = await efetivarEntradaEstoque({
+        ...entradaPayload,
+        empresaId,
+      });
+      return NextResponse.json({ success: result.success, data: result, error: result.error });
     }
 
     if (action === 'salvar-config') {

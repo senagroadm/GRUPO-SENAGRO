@@ -693,6 +693,8 @@ class EstoqueRepository {
       documentoOrigemTipo: TipoDocumentoOrigem;
       documentoOrigemId?: string;
       documentoOrigemNumero?: string;
+      chaveAcessoNfe?: string;
+      nfeItemId?: string;
       motivo: string;
       observacoes?: string;
       usuarioId: string;
@@ -861,6 +863,8 @@ class EstoqueRepository {
       documentoOrigemTipo: params.documentoOrigemTipo,
       documentoOrigemId: params.documentoOrigemId,
       documentoOrigemNumero: params.documentoOrigemNumero,
+      chaveAcessoNfe: params.chaveAcessoNfe,
+      nfeItemId: params.nfeItemId,
       motivo: params.motivo,
       observacoes: params.observacoes,
       estornado: false,

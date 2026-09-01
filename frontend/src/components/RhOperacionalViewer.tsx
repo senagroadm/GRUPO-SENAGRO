@@ -344,13 +344,7 @@ export function RhOperacionalViewer({ empresaAtiva }: RhOperacionalViewerProps) 
             <div>
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 RH Operacional & Gestão do Trabalho Fabril
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  Isolamento por CNPJ
-                </span>
               </h2>
-              <p className="text-xs text-slate-500">
-                Empresa Ativa: <strong className="text-slate-800">{empresaAtiva.nomeFantasia}</strong> ({empresaAtiva.cnpj})
-              </p>
             </div>
           </div>
         </div>

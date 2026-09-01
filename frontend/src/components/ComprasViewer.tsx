@@ -29,6 +29,7 @@ import {
   AvaliacaoFornecedorIQF,
   PrioridadeCompra,
 } from '../../../backend/modules/compras/compras-types';
+import { safeFetchJson } from '../lib/safe-fetch';
 
 interface ComprasViewerProps {
   empresaAtiva: Empresa;
@@ -101,19 +102,29 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
   const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/v1/compras?empresaId=${empresaAtiva.id}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setSolicitacoes(json.data.solicitacoes || []);
-        setCotacoes(json.data.cotacoes || []);
-        setPedidos(json.data.pedidos || []);
-        setRecebimentos(json.data.recebimentos || []);
-        setDevolucoes(json.data.devolucoes || []);
-        setHistoricoPrecos(json.data.historicoPrecos || []);
-        setFornecedoresIQF(json.data.fornecedoresIQF || []);
+      const res = await safeFetchJson<{
+        solicitacoes: SolicitacaoCompra[];
+        cotacoes: CotacaoCompra[];
+        pedidos: PedidoCompra[];
+        recebimentos: RecebimentoCompra[];
+        devolucoes: DevolucaoCompra[];
+        historicoPrecos: HistoricoPrecoCompra[];
+        fornecedoresIQF: AvaliacaoFornecedorIQF[];
+      }>(`/api/v1/compras?empresaId=${empresaAtiva.id}`);
+
+      if (res.success && res.data) {
+        setSolicitacoes(res.data.solicitacoes || []);
+        setCotacoes(res.data.cotacoes || []);
+        setPedidos(res.data.pedidos || []);
+        setRecebimentos(res.data.recebimentos || []);
+        setDevolucoes(res.data.devolucoes || []);
+        setHistoricoPrecos(res.data.historicoPrecos || []);
+        setFornecedoresIQF(res.data.fornecedoresIQF || []);
+      } else if (res.error) {
+        console.warn('Informação de compras:', res.error);
       }
     } catch (err: any) {
-      console.error('Erro ao carregar dados de compras:', err);
+      console.warn('Falha na comunicação de compras:', err?.message || err);
     } finally {
       setLoading(false);
     }
@@ -138,8 +149,12 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
 
   // Actions
   const handleAprovarSolicitacao = async (id: string) => {
+    // Optimistic UI update
+    setSolicitacoes((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: 'APROVADA' as const, aprovadoPor: 'Diretoria de Suprimentos' } : s))
+    );
     try {
-      const res = await fetch(`/api/v1/compras/solicitacoes/${id}/aprovar`, {
+      const data = await safeFetchJson(`/api/v1/compras/solicitacoes/${id}/aprovar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,21 +162,22 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
           parecer: 'Aprovado para cotação competitiva com fornecedores homologados.',
         }),
       });
-      const data = await res.json();
       if (data.success) {
         showToast('success', data.message || 'Solicitação aprovada com sucesso.');
         carregarDados();
       } else {
         showToast('error', data.error || 'Erro ao aprovar solicitação.');
+        carregarDados();
       }
     } catch (err: any) {
       showToast('error', err.message || 'Erro inesperado.');
+      carregarDados();
     }
   };
 
   const handleCriarCotacao = async (solicitacaoId: string) => {
     try {
-      const res = await fetch('/api/v1/compras/cotacoes', {
+      const data = await safeFetchJson('/api/v1/compras/cotacoes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -170,7 +186,6 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
           compradorNome: 'Especialista em Suprimentos Siderúrgicos',
         }),
       });
-      const data = await res.json();
       if (data.success) {
         showToast('success', data.message || 'Cotação multi-critério calculada.');
         setActiveTab('cotacoes');
@@ -185,7 +200,7 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
 
   const handleAprovarCotacao = async (cotacaoId: string, fornecedorIdVencedor?: string) => {
     try {
-      const res = await fetch(`/api/v1/compras/cotacoes/${cotacaoId}/aprovar`, {
+      const data = await safeFetchJson(`/api/v1/compras/cotacoes/${cotacaoId}/aprovar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -194,9 +209,8 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
           justificativaEscolha: 'Melhor pontuação ponderada de score IQF, menor lead time e preço competitivo.',
         }),
       });
-      const data = await res.json();
       if (data.success) {
-        showToast('success', data.message || 'Cotação aprovada e Pedido de Compra gerado.');
+        showToast('success', data.message || 'Cotação aprovada e Pedido de Compra gerado com sucesso.');
         setActiveTab('pedidos');
         carregarDados();
       } else {
@@ -210,7 +224,7 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
   const handleSalvarSolicitacao = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/compras/solicitacoes', {
+      const data = await safeFetchJson('/api/v1/compras/solicitacoes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -226,7 +240,6 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
           itens: formItens,
         }),
       });
-      const data = await res.json();
       if (data.success) {
         showToast('success', data.message || 'Solicitação de compra cadastrada com sucesso.');
         setActiveTab('solicitacoes');
@@ -241,7 +254,7 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
 
   const handleProcessarRecebimento = async (pedido: PedidoCompra) => {
     try {
-      const res = await fetch('/api/v1/compras/recebimentos', {
+      const data = await safeFetchJson('/api/v1/compras/recebimentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -265,7 +278,6 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
           })),
         }),
       });
-      const data = await res.json();
       if (data.success) {
         showToast('success', data.message || 'Recebimento físico e fiscal processado com entrada no estoque.');
         setActiveTab('recebimentos');
@@ -557,26 +569,30 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-right space-x-1.5 whitespace-nowrap">
-                          {sol.status === 'RASCUNHO' && (
+                          {sol.status !== 'APROVADA' && sol.status !== 'EM_COTACAO' && (
                             <button
+                              id={`btn-aprovar-solicitacao-${sol.id}`}
                               onClick={() => handleAprovarSolicitacao(sol.id)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-colors"
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-colors cursor-pointer inline-flex items-center gap-1 shadow-xs"
                             >
+                              <Check className="w-3 h-3" />
                               Aprovar
                             </button>
                           )}
-                          {sol.status === 'APROVADA' && (
+                          {(sol.status === 'APROVADA' || sol.status === 'ATENDIDA_PARCIAL' || sol.status === 'EM_COTACAO') && (
                             <button
+                              id={`btn-cotar-solicitacao-${sol.id}`}
                               onClick={() => handleCriarCotacao(sol.id)}
-                              className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-bold transition-colors flex items-center gap-1 inline-flex"
+                              className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-bold transition-colors flex items-center gap-1 inline-flex cursor-pointer shadow-xs"
                             >
                               <Sliders className="w-3 h-3" />
                               Cotar no Mercado
                             </button>
                           )}
                           <button
+                            id={`btn-ver-itens-solicitacao-${sol.id}`}
                             onClick={() => setSelectedSolicitacao(sol)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold transition-colors"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold transition-colors cursor-pointer"
                           >
                             Ver Itens
                           </button>
@@ -1203,10 +1219,24 @@ export function ComprasViewer({ empresaAtiva }: ComprasViewerProps) {
               ))}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+              {selectedSolicitacao.status !== 'APROVADA' && selectedSolicitacao.status !== 'EM_COTACAO' && (
+                <button
+                  id={`modal-btn-aprovar-solicitacao-${selectedSolicitacao.id}`}
+                  onClick={() => {
+                    handleAprovarSolicitacao(selectedSolicitacao.id);
+                    setSelectedSolicitacao(null);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Aprovar Solicitação
+                </button>
+              )}
               <button
+                id="modal-btn-fechar-solicitacao"
                 onClick={() => setSelectedSolicitacao(null)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer ml-auto"
               >
                 Fechar
               </button>

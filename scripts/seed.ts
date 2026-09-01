@@ -5,6 +5,10 @@ import { EMPRESAS_GRUPO } from '../backend/core/types/company';
 async function runSeeds() {
   logger.info('Iniciando seed do banco de dados (5 Empresas do Grupo + Usuário SuperAdmin)...');
   const pool = getDatabasePool();
+  if (!pool) {
+    logger.warn('Banco de dados não configurado ou DATABASE_URL indisponível. Ignorando seed.');
+    return;
+  }
   const client = await pool.connect();
 
   try {

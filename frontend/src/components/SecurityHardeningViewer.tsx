@@ -331,7 +331,7 @@ export function SecurityHardeningViewer() {
 
               <div className="space-y-1 text-xs">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Implementação Técnica no NEXUS ERP:
+                  Implementação Técnica no GRUPO SENAGRO:
                 </span>
                 <p className="text-slate-700 text-xs leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-200 font-medium">
                   {itemSelecionado.detalheTecnico}

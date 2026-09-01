@@ -7,18 +7,41 @@ import { logger } from '../core/logger';
 let pool: Pool | null = null;
 let dbInstance: NodePgDatabase<typeof schema> | null = null;
 
-export function getDatabasePool(): Pool {
+export function isDatabaseConfigured(): boolean {
+  const config = getAppConfig();
+  if (!process.env.DATABASE_URL) return false;
+  if (config.DATABASE_URL.includes('nexus_password@localhost')) return false;
+  if (config.DATABASE_URL.includes('[SUA-SENHA]')) return false;
+  return true;
+}
+
+export function getDatabasePool(): Pool | null {
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+
   if (!pool) {
     const config = getAppConfig();
-    const isSupabase = config.DATABASE_URL.includes('supabase.co');
+    const isRemoteDb = 
+      config.DATABASE_URL.includes('supabase.co') || 
+      config.DATABASE_URL.includes('supabase.com') ||
+      config.DATABASE_URL.includes('pooler.supabase.com') ||
+      config.DATABASE_URL.includes('aws-0-') ||
+      config.DATABASE_URL.includes('sslmode=') ||
+      config.DATABASE_URL.includes('render.com') ||
+      config.DATABASE_URL.includes('neon.tech') ||
+      !config.DATABASE_URL.includes('localhost');
+
+    // Remove ?sslmode=... ou &sslmode=... para permitir que o objeto ssl: { rejectUnauthorized: false } controle o handshake
+    const sanitizedConnectionString = config.DATABASE_URL.replace(/[?&]sslmode=[^&]+/g, '');
 
     pool = new Pool({
-      connectionString: config.DATABASE_URL,
+      connectionString: sanitizedConnectionString,
       min: config.DATABASE_POOL_MIN,
       max: config.DATABASE_POOL_MAX,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
-      ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+      ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
     });
 
     pool.on('error', (err) => {
@@ -29,10 +52,12 @@ export function getDatabasePool(): Pool {
   return pool;
 }
 
-export function getDb(): NodePgDatabase<typeof schema> {
+export function getDb(): NodePgDatabase<typeof schema> | null {
   if (!dbInstance) {
     const p = getDatabasePool();
-    dbInstance = drizzle(p, { schema });
+    if (p) {
+      dbInstance = drizzle(p, { schema });
+    }
   }
   return dbInstance;
 }
@@ -48,15 +73,7 @@ export interface DbHealthResult {
 
 export async function checkDatabaseHealth(): Promise<DbHealthResult> {
   const start = Date.now();
-  const config = getAppConfig();
-  const isDefaultLocal =
-    !process.env.DATABASE_URL ||
-    config.DATABASE_URL.includes('nexus_password@localhost') ||
-    config.DATABASE_URL.includes('[SUA-SENHA]');
-
-  // In preview / container development without password configured,
-  // return active fallback status without attempting connection
-  if (isDefaultLocal) {
+  if (!isDatabaseConfigured()) {
     return {
       status: 'healthy',
       latencyMs: 0,
@@ -66,6 +83,14 @@ export async function checkDatabaseHealth(): Promise<DbHealthResult> {
   }
 
   const p = getDatabasePool();
+  if (!p) {
+    return {
+      status: 'healthy',
+      latencyMs: 0,
+      totalClients: 0,
+      idleClients: 0,
+    };
+  }
 
   try {
     const client: PoolClient = await p.connect();

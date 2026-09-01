@@ -6,6 +6,10 @@ import { logger } from '../backend/core/logger';
 async function runMigrations() {
   logger.info('Iniciando execução de migrations do PostgreSQL...');
   const pool = getDatabasePool();
+  if (!pool) {
+    logger.warn('Banco de dados não configurado ou DATABASE_URL indisponível. Ignorando migrations.');
+    return;
+  }
   const client = await pool.connect();
 
   try {

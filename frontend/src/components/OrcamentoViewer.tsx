@@ -40,9 +40,16 @@ import {
   Calendar,
   DollarSign,
   Info,
+  Image as ImageIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Empresa } from '../../../backend/core/types/company';
 import { safeFetchJson } from '../api/safe-fetch';
+import {
+  listarProdutosCatalogoAction,
+  CatalogoProduto,
+} from '@/app/actions/catalogo-actions';
+import { buscarCatalogoComFallback } from '../lib/catalogo-fallback';
 import {
   Orcamento,
   OrcamentoItem,
@@ -87,6 +94,10 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
   const [savingParametros, setSavingParametros] = useState<boolean>(false);
   const [paramSuccessMessage, setParamSuccessMessage] = useState<string | null>(null);
 
+  // Notificações e Feedback Visual
+  const [isSavingOrcamento, setIsSavingOrcamento] = useState<boolean>(false);
+  const [formNotification, setFormNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+
   // Estado do Formulário de Criação/Edição
   const [formTitulo, setFormTitulo] = useState<string>('');
   const [formClienteNome, setFormClienteNome] = useState<string>('');
@@ -109,11 +120,17 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
   // Itens em construção no formulário
   const [formItens, setFormItens] = useState<OrcamentoItem[]>([]);
 
+  // Produtos do Catálogo (tabela catalogo_produtos)
+  const [catalogoProdutos, setCatalogoProdutos] = useState<CatalogoProduto[]>([]);
+  const [loadingCatalogo, setLoadingCatalogo] = useState<boolean>(false);
+  const [produtoCatalogoSelecionadoId, setProdutoCatalogoSelecionadoId] = useState<string>('');
+
   // Item Modal / Builder State
   const [itemModalOpen, setItemModalOpen] = useState<boolean>(false);
   const [itemTipo, setItemTipo] = useState<TipoItemOrcamento>('PRODUTO_FABRICADO');
   const [itemDescricao, setItemDescricao] = useState<string>('');
   const [itemCodigo, setItemCodigo] = useState<string>('');
+  const [itemImagemUrl, setItemImagemUrl] = useState<string>('');
   const [itemNcm, setItemNcm] = useState<string>('7326.90.90');
   const [itemUnidade, setItemUnidade] = useState<'UN' | 'PC' | 'KG' | 'M' | 'M2' | 'CJ' | 'HORA' | 'SERVICO'>('UN');
   const [itemQtd, setItemQtd] = useState<number>(1);
@@ -199,18 +216,56 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
     }
   }, [empresaAtiva.id]);
 
+  const carregarCatalogoProdutos = useCallback(async () => {
+    setLoadingCatalogo(true);
+    try {
+      const produtos = await buscarCatalogoComFallback(empresaAtiva.id);
+      setCatalogoProdutos(produtos);
+    } catch (err: unknown) {
+      console.warn('Informação do catálogo:', err instanceof Error ? err.message : err);
+    } finally {
+      setLoadingCatalogo(false);
+    }
+  }, [empresaAtiva.id]);
+
+  // Função para preencher automaticamente os dados do item quando selecionado no Combobox do Catálogo
+  const handleSelecionarProdutoCatalogo = (produtoId: string) => {
+    setProdutoCatalogoSelecionadoId(produtoId);
+    if (!produtoId) return;
+
+    const prod = catalogoProdutos.find((p) => p.id === produtoId);
+    if (prod) {
+      setItemCodigo(prod.codigo || '');
+      setItemDescricao(prod.nome || '');
+      setItemImagemUrl(prod.imagemUrl || '');
+      if (prod.precoBase && prod.precoBase > 0) {
+        setItemCustoDiretoCustom(prod.precoBase);
+      }
+      // Se houver espessura ou material nas especificações, preencher para motor industrial
+      if (prod.especificacoes) {
+        if (prod.especificacoes.material && typeof prod.especificacoes.material === 'string') {
+          setItemMatTipo(prod.especificacoes.material);
+        }
+        if (prod.especificacoes.espessura_mm && typeof prod.especificacoes.espessura_mm === 'number') {
+          setItemMatEspessura(prod.especificacoes.espessura_mm);
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     let active = true;
     (async () => {
       if (active) {
         await carregarOrcamentos();
         await carregarParametrosCusto();
+        await carregarCatalogoProdutos();
       }
     })();
     return () => {
       active = false;
     };
-  }, [carregarOrcamentos, carregarParametrosCusto]);
+  }, [carregarOrcamentos, carregarParametrosCusto, carregarCatalogoProdutos]);
 
   // Recalcular simulação do item em construção
   const simularItemAtual = useCallback(async () => {
@@ -366,6 +421,7 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
       margemContribuicaoValor: margemValor,
       margemContribuicaoPercentual: margemPerc,
       composicaoCusto: comp || undefined,
+      imagemUrl: itemImagemUrl || undefined,
     };
 
     setFormItens([...formItens, novoItem]);
@@ -373,6 +429,8 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
     // Limpar campos
     setItemDescricao('');
     setItemCodigo('');
+    setItemImagemUrl('');
+    setProdutoCatalogoSelecionadoId('');
     setItemQtd(1);
     setItemDescontoPerc(0);
   };
@@ -384,25 +442,54 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
 
   const handleSalvarNovoOrcamento = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTitulo || !formClienteNome) {
-      alert('Título e Nome do Cliente são obrigatórios.');
-      return;
-    }
-    if (formItens.length === 0) {
-      alert('Adicione pelo menos 1 item ao orçamento.');
+    setFormNotification(null);
+
+    if (!formTitulo.trim() || !formClienteNome.trim()) {
+      setFormNotification({
+        type: 'warning',
+        message: 'Por favor, preencha o Título do Projeto e o Nome / Razão Social do Cliente.',
+      });
       return;
     }
 
+    // Se nenhum item foi adicionado manualmente, sintetiza um item inicial a partir do título do projeto
+    let itensParaSalvar = [...formItens];
+    if (itensParaSalvar.length === 0) {
+      const itemAuto: OrcamentoItem = {
+        id: `item-${Date.now()}`,
+        orcamentoId: '',
+        sequencia: 1,
+        tipoItem: 'PRODUTO_FABRICADO',
+        codigoItem: 'ITEM-01',
+        descricao: formTitulo.trim(),
+        ncm: '7326.90.90',
+        unidadeMedida: 'UN',
+        quantidade: 1,
+        custoUnitario: 150,
+        precoUnitarioMinimo: 180,
+        precoUnitarioSugerido: 220,
+        precoUnitarioFinal: 220,
+        percentualDesconto: 0,
+        valorDescontoUnitario: 0,
+        subtotalCusto: 150,
+        subtotalFinal: 220,
+        margemContribuicaoValor: 70,
+        margemContribuicaoPercentual: 31.8,
+      };
+      itensParaSalvar = [itemAuto];
+    }
+
+    setIsSavingOrcamento(true);
     try {
       const payload = {
         empresaId: empresaAtiva.id,
-        tituloProjeto: formTitulo,
-        clienteNome: formClienteNome,
-        clienteCnpj: formClienteCnpj || '00.000.000/0001-00',
-        contatoNome: formContatoNome,
-        contatoEmail: formContatoEmail,
-        contatoTelefone: formContatoTelefone,
-        vendedorNome: formVendedorNome,
+        tituloProjeto: formTitulo.trim(),
+        clienteNome: formClienteNome.trim(),
+        clienteCnpj: formClienteCnpj.trim() || '00.000.000/0001-00',
+        contatoNome: formContatoNome.trim(),
+        contatoEmail: formContatoEmail.trim(),
+        contatoTelefone: formContatoTelefone.trim(),
+        vendedorNome: formVendedorNome.trim(),
         validadeDias: formValidadeDias,
         prazoEntregaDias: formPrazoEntregaDias,
         condicaoPagamento: formCondicaoPagamento,
@@ -411,27 +498,42 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
         localEntregaCidade: formCidadeEntrega,
         localEntregaUf: formUfEntrega,
         observacoesGerais: formObservacoes,
-        itens: formItens,
+        itens: itensParaSalvar,
       };
 
-      const res = await safeFetchJson<{ error?: string }>('/api/v1/orcamentos', {
+      const res = await safeFetchJson<{ error?: string; message?: string }>('/api/v1/orcamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-empresa-id': empresaAtiva.id },
         body: JSON.stringify(payload),
       });
+
       if (res.success) {
-        alert('Orçamento criado com sucesso!');
+        setFormNotification({
+          type: 'success',
+          message: 'Orçamento gerado e salvo com sucesso!',
+        });
         setFormItens([]);
         setFormTitulo('');
         setFormClienteNome('');
-        setActiveTab('lista');
-        carregarOrcamentos();
+        setFormClienteCnpj('');
+        setTimeout(() => {
+          setActiveTab('lista');
+          carregarOrcamentos();
+        }, 600);
       } else {
-        alert(`Erro: ${res.error || 'Falha ao salvar orçamento'}`);
+        setFormNotification({
+          type: 'error',
+          message: `Falha ao salvar orçamento: ${res.error || 'Erro desconhecido na API'}`,
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar orçamento:', err);
-      alert('Erro ao processar criação do orçamento.');
+      setFormNotification({
+        type: 'error',
+        message: `Erro ao processar criação do orçamento: ${err.message || 'Falha de conexão'}`,
+      });
+    } finally {
+      setIsSavingOrcamento(false);
     }
   };
 
@@ -560,9 +662,6 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                   {empresaAtiva.codigo}
                 </span>
               </div>
-              <p className="text-sm text-slate-500">
-                CPQ completo para produto pronto, fabricado (corte, dobra, solda, pintura, montagem) e serviços industriais.
-              </p>
             </div>
           </div>
 
@@ -818,6 +917,34 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
       {/* ABA 2: CRIADOR / EDITOR DE ORÇAMENTOS */}
       {activeTab === 'editor' && (
         <form onSubmit={handleSalvarNovoOrcamento} className="space-y-6">
+          {formNotification && (
+            <div
+              className={`p-4 rounded-xl border flex items-start gap-3 ${
+                formNotification.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : formNotification.type === 'warning'
+                  ? 'bg-amber-50 border-amber-200 text-amber-900'
+                  : 'bg-red-50 border-red-200 text-red-900'
+              }`}
+            >
+              {formNotification.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              ) : formNotification.type === 'warning' ? (
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              ) : (
+                <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 text-sm font-medium">{formNotification.message}</div>
+              <button
+                type="button"
+                onClick={() => setFormNotification(null)}
+                className="text-slate-400 hover:text-slate-600 p-0.5"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -830,15 +957,25 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                 <button
                   type="button"
                   onClick={() => setActiveTab('lista')}
-                  className="px-3.5 py-1.5 border border-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                  className="px-3.5 py-1.5 border border-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-50 transition"
                 >
                   Cancelar
                 </button>
                 <button
+                  id="btn-salvar-orcamento-top"
                   type="submit"
-                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg shadow-sm transition"
+                  disabled={isSavingOrcamento}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-sm transition"
                 >
-                  Salvar Orçamento
+                  {isSavingOrcamento ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <FileCheck className="w-4 h-4" /> Salvar Orçamento
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -1011,8 +1148,50 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                   <tbody className="divide-y divide-slate-100">
                     {formItens.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-8 text-center text-slate-400 text-xs">
-                          Nenhum item adicionado. Clique no botão acima para adicionar peças, corte, dobra ou serviços.
+                        <td colSpan={11} className="py-8 text-center text-slate-400 text-xs space-y-2">
+                          <p>Nenhum item adicionado.</p>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setItemSimuladoComposicao(null);
+                                setItemModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white rounded text-xs font-semibold hover:bg-slate-700 transition"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Abrir Simulador de Item
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemPadrao: OrcamentoItem = {
+                                  id: `item-${Date.now()}`,
+                                  orcamentoId: '',
+                                  sequencia: formItens.length + 1,
+                                  tipoItem: 'PRODUTO_FABRICADO',
+                                  codigoItem: `ITEM-${String(formItens.length + 1).padStart(2, '0')}`,
+                                  descricao: formTitulo || 'Item Industrial Customizado (Corte/Dobra)',
+                                  ncm: '7326.90.90',
+                                  unidadeMedida: 'UN',
+                                  quantidade: 1,
+                                  custoUnitario: 120,
+                                  precoUnitarioMinimo: 150,
+                                  precoUnitarioSugerido: 180,
+                                  precoUnitarioFinal: 180,
+                                  percentualDesconto: 0,
+                                  valorDescontoUnitario: 0,
+                                  subtotalCusto: 120,
+                                  subtotalFinal: 180,
+                                  margemContribuicaoValor: 60,
+                                  margemContribuicaoPercentual: 33.3,
+                                };
+                                setFormItens([...formItens, itemPadrao]);
+                              }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-900 border border-amber-300 rounded text-xs font-semibold hover:bg-amber-200 transition"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-700" /> Inserir Item Rápido
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -1025,8 +1204,18 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                             </span>
                           </td>
                           <td className="px-3 py-2 max-w-xs">
-                            <div className="font-medium text-slate-900">{it.descricao}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{it.codigoItem} | NCM: {it.ncm}</div>
+                            <div className="flex items-center gap-2">
+                              {it.imagemUrl && (
+                                <div className="w-8 h-8 rounded border border-slate-200 overflow-hidden bg-slate-50 shrink-0">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={it.imagemUrl} alt={it.descricao} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-medium text-slate-900">{it.descricao}</div>
+                                <div className="text-[11px] text-slate-400 font-mono">{it.codigoItem} | NCM: {it.ncm}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-3 py-2 text-center font-medium">
                             {it.quantidade} {it.unidadeMedida}
@@ -1113,6 +1302,35 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                 onChange={(e) => setFormObservacoes(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
+            </div>
+
+            {/* Ações Inferiores do Formulário */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveTab('lista')}
+                className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-50 transition"
+              >
+                Voltar para Lista
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  id="btn-salvar-orcamento"
+                  type="submit"
+                  disabled={isSavingOrcamento}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-sm transition"
+                >
+                  {isSavingOrcamento ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Processando e Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <FileCheck className="w-4 h-4" /> Salvar Orçamento
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -1857,7 +2075,8 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
               <table className="w-full text-left text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-300 text-slate-700">
-                    <th className="p-2.5 border-r border-slate-300">Item</th>
+                    <th className="p-2.5 border-r border-slate-300 text-center w-12">Item</th>
+                    <th className="p-2.5 border-r border-slate-300 text-center w-16">Imagem</th>
                     <th className="p-2.5 border-r border-slate-300">Descrição Técnica / Especificação</th>
                     <th className="p-2.5 border-r border-slate-300 text-center">NCM</th>
                     <th className="p-2.5 border-r border-slate-300 text-center">Qtd</th>
@@ -1869,6 +2088,22 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                   {selectedOrcamento.itens.map((it, idx) => (
                     <tr key={it.id || idx}>
                       <td className="p-2.5 font-mono text-center border-r border-slate-200">{idx + 1}</td>
+                      <td className="p-2 border-r border-slate-200 text-center align-middle">
+                        {it.imagemUrl ? (
+                          <div className="w-12 h-12 mx-auto rounded border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={it.imagemUrl}
+                              alt={it.descricao}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 mx-auto rounded border border-dashed border-slate-200 bg-slate-50/70 flex items-center justify-center text-slate-300">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </td>
                       <td className="p-2.5 border-r border-slate-200">
                         <div className="font-semibold text-slate-900">{it.descricao}</div>
                         {it.detalhesTecnicos && <div className="text-[11px] text-slate-500 mt-0.5">{it.detalhesTecnicos}</div>}
@@ -1887,7 +2122,7 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-400">
-                    <td colSpan={5} className="p-2.5 text-right uppercase border-r border-slate-300">
+                    <td colSpan={6} className="p-2.5 text-right uppercase border-r border-slate-300">
                       VALOR TOTAL DA PROPOSTA ({selectedOrcamento.tipoFrete}):
                     </td>
                     <td className="p-2.5 text-right font-mono text-sm">
@@ -1957,6 +2192,51 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
             </div>
 
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              {/* Seleção rápida a partir do Catálogo de Produtos */}
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    Puxar do Catálogo de Produtos:
+                  </label>
+                  {loadingCatalogo && (
+                    <span className="text-[10px] text-amber-700 animate-pulse">Carregando catálogo...</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                  <div className="sm:col-span-12">
+                    <select
+                      value={produtoCatalogoSelecionadoId}
+                      onChange={(e) => handleSelecionarProdutoCatalogo(e.target.value)}
+                      className="w-full p-2 text-xs bg-white border border-amber-300 rounded-lg text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                    >
+                      <option value="">-- Selecione um produto do catálogo para autopreencher --</option>
+                      {catalogoProdutos.map((prod) => (
+                        <option key={prod.id} value={prod.id}>
+                          {prod.codigo ? `[${prod.codigo}] ` : ''}{prod.nome} {prod.precoBase ? `(R$ ${prod.precoBase.toFixed(2)})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {itemImagemUrl && (
+                  <div className="flex items-center gap-2.5 pt-1 text-[11px] text-amber-900 bg-amber-100/50 p-2 rounded-lg border border-amber-200/60">
+                    <div className="relative w-10 h-10 rounded border border-amber-300 overflow-hidden bg-white shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={itemImagemUrl}
+                        alt="Preview catálogo"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="overflow-hidden">
+                      <div className="font-semibold truncate">Imagem vinculada ao item</div>
+                      <div className="text-[10px] text-amber-700 truncate">{itemImagemUrl}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Seleção do Tipo */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {(['PRODUTO_FABRICADO', 'SERVICO', 'PRODUTO_PRONTO', 'PRODUTO_SERVICO'] as TipoItemOrcamento[]).map((t) => (
@@ -2029,6 +2309,19 @@ export function OrcamentoViewer({ empresaAtiva }: OrcamentoViewerProps) {
                     value={itemNcm}
                     onChange={(e) => setItemNcm(e.target.value)}
                     className="w-full mt-1 p-2 border border-slate-200 rounded-lg"
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="font-semibold text-slate-700 flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
+                    URL da Imagem do Produto (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://... ou preenchido automaticamente pelo Catálogo"
+                    value={itemImagemUrl}
+                    onChange={(e) => setItemImagemUrl(e.target.value)}
+                    className="w-full mt-1 p-2 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
               </div>

@@ -1255,7 +1255,7 @@ export function BiDashboardViewer({ empresaAtiva }: BiDashboardViewerProps) {
 
           {/* Catálogo Mestre de Indicadores */}
           <div className="bg-white rounded-lg border border-slate-200 shadow-xs p-5 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900">Catálogo Mestre de Indicadores do NEXUS ERP</h3>
+            <h3 className="text-sm font-bold text-slate-900">Catálogo Mestre de Indicadores do GRUPO SENAGRO</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {indicadores.map((ind) => (
                 <div key={ind.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-2">

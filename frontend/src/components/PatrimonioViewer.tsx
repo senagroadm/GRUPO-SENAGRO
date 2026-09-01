@@ -867,71 +867,105 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
       {activeSubTab === 'ferramentas' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="space-y-3">
-              {ferramentas.map((fer) => {
-                const isSelected = ferramentaSelecionada?.id === fer.id;
-                const isInadequada = fer.condicao === 'INADEQUADA_AVARIADA' || fer.necessitaManutencaoOuAfiacao;
-                return (
-                  <div
-                    key={fer.id}
-                    onClick={() => setFerramentaSelecionada(fer)}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-xs ${
-                      isSelected
-                        ? 'border-orange-600 ring-2 ring-orange-100'
-                        : isInadequada
-                        ? 'border-rose-300 ring-1 ring-rose-100'
-                        : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-900">{fer.codigo}</span>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              fer.condicao === 'EXCELENTE'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : fer.condicao === 'BOA'
-                                ? 'bg-blue-100 text-blue-800'
-                                : fer.condicao === 'DESGASTADA'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
-                            }`}
-                          >
-                            {fer.condicao}
-                          </span>
-                          {isInadequada && (
-                            <span className="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> Condição Inadequada
+            {ferramentas.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-4">
+                <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                  <Wrench className="w-8 h-8" />
+                </div>
+                <div className="max-w-md mx-auto space-y-1">
+                  <h4 className="text-base font-bold text-slate-900">Nenhuma ferramenta ou matriz cadastrada</h4>
+                  <p className="text-xs text-slate-500">
+                    Cadastre punções, matrizes, estampos, moldes ou ferramentas de corte para monitorar ciclos de afiação e movimentações.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormFerramenta({
+                      codigo: `FER-MAT-${String(ferramentas.length + 10).padStart(3, '0')}`,
+                      nome: '',
+                      categoria: 'PUNCAO_MATRIZ_DOBRA',
+                      localizacao: 'Armário Ferramentaria Gaveta A1',
+                      responsavel: 'Marcio Silva (Ferramenteiro)',
+                      condicao: 'EXCELENTE',
+                      ciclosUsoAtual: 0,
+                      limiteCiclosAfiacao: 50000,
+                      motivoCondicaoInadequada: '',
+                    });
+                    setShowModalNovaFerramenta(true);
+                  }}
+                  className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+                >
+                  <Plus className="w-4 h-4" /> Cadastrar Primeira Ferramenta
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ferramentas.map((fer) => {
+                  const isSelected = ferramentaSelecionada?.id === fer.id;
+                  const isInadequada = fer.condicao === 'INADEQUADA_AVARIADA' || fer.necessitaManutencaoOuAfiacao;
+                  return (
+                    <div
+                      key={fer.id}
+                      onClick={() => setFerramentaSelecionada(fer)}
+                      className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-xs ${
+                        isSelected
+                          ? 'border-orange-600 ring-2 ring-orange-100'
+                          : isInadequada
+                          ? 'border-rose-300 ring-1 ring-rose-100'
+                          : 'border-slate-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-900">{fer.codigo}</span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                fer.condicao === 'EXCELENTE'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : fer.condicao === 'BOA'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : fer.condicao === 'DESGASTADA'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
+                            >
+                              {fer.condicao}
                             </span>
-                          )}
+                            {isInadequada && (
+                              <span className="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> Condição Inadequada
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-semibold text-slate-800">{fer.nome}</h4>
+                          <p className="text-[11px] text-slate-500">
+                            Local: {fer.localizacao} | Responsável: {fer.responsavel}
+                          </p>
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-800">{fer.nome}</h4>
-                        <p className="text-[11px] text-slate-500">
-                          Local: {fer.localizacao} | Responsável: {fer.responsavel}
-                        </p>
-                      </div>
 
-                      <div className="text-right space-y-1">
-                        <div className="text-xs font-bold text-slate-900">
-                          {fer.ciclosUsoAtual.toLocaleString('pt-BR')} / {fer.limiteCiclosAfiacao.toLocaleString('pt-BR')} ciclos
-                        </div>
-                        <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden ml-auto">
-                          <div
-                            className={`h-full ${
-                              fer.ciclosUsoAtual >= fer.limiteCiclosAfiacao ? 'bg-rose-600' : 'bg-orange-600'
-                            }`}
-                            style={{
-                              width: `${Math.min(100, (fer.ciclosUsoAtual / fer.limiteCiclosAfiacao) * 100)}%`,
-                            }}
-                          ></div>
+                        <div className="text-right space-y-1">
+                          <div className="text-xs font-bold text-slate-900">
+                            {fer.ciclosUsoAtual.toLocaleString('pt-BR')} / {fer.limiteCiclosAfiacao.toLocaleString('pt-BR')} ciclos
+                          </div>
+                          <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden ml-auto">
+                            <div
+                              className={`h-full ${
+                                fer.ciclosUsoAtual >= fer.limiteCiclosAfiacao ? 'bg-rose-600' : 'bg-orange-600'
+                              }`}
+                              style={{
+                                width: `${Math.min(100, (fer.ciclosUsoAtual / fer.limiteCiclosAfiacao) * 100)}%`,
+                              }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Detalhes da Ferramenta */}
@@ -1023,78 +1057,115 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
       {activeSubTab === 'calibracao' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="space-y-3">
-              {instrumentos.map((inst) => {
-                const isSelected = instrumentoSelecionado?.id === inst.id;
-                const isVencido = inst.status === 'VENCIDO' || inst.bloqueadoParaUso;
-                const isProximo = inst.status === 'PROXIMO_VENCER';
+            {instrumentos.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs space-y-4">
+                <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                  <Gauge className="w-8 h-8" />
+                </div>
+                <div className="max-w-md mx-auto space-y-1">
+                  <h4 className="text-base font-bold text-slate-900">Nenhum instrumento de medição cadastrado</h4>
+                  <p className="text-xs text-slate-500">
+                    Cadastre paquímetros, micrômetros, torquímetros, manômetros ou relógios comparadores com controle metrológico RBC e validade de certificados.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormInstrumento({
+                      codigoInstrumento: `CAL-INST-${String(instrumentos.length + 15).padStart(3, '0')}`,
+                      nomeInstrumento: '',
+                      tipoInstrumento: 'PAQUIMETRO',
+                      localizacao: 'Sala Limpa / Metrologia',
+                      responsavel: 'Juliana Paes (Qualidade)',
+                      faixaMedicao: '0 - 150 mm (0.01 mm)',
+                      toleranciaAdmissivel: '± 0.02 mm',
+                      frequenciaMeses: 12,
+                      dataUltimaCalibracao: new Date().toISOString().split('T')[0],
+                      numeroCertificado: `CERT-RBC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                      laboratorioCalibrador: 'Laboratório Metrológico RBC/Inmetro',
+                      resultadoInicial: 'APROVADO',
+                    });
+                    setShowModalNovoInstrumento(true);
+                  }}
+                  className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+                >
+                  <Plus className="w-4 h-4" /> Cadastrar Primeiro Instrumento
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {instrumentos.map((inst) => {
+                  const isSelected = instrumentoSelecionado?.id === inst.id;
+                  const isVencido = inst.status === 'VENCIDO' || inst.bloqueadoParaUso;
+                  const isProximo = inst.status === 'PROXIMO_VENCER';
 
-                return (
-                  <div
-                    key={inst.id}
-                    onClick={() => setInstrumentoSelecionado(inst)}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-xs ${
-                      isSelected
-                        ? 'border-teal-600 ring-2 ring-teal-100'
-                        : isVencido
-                        ? 'border-rose-300 ring-1 ring-rose-100'
-                        : isProximo
-                        ? 'border-amber-300'
-                        : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-900">{inst.codigoInstrumento}</span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                            {inst.tipoInstrumento}
-                          </span>
+                  return (
+                    <div
+                      key={inst.id}
+                      onClick={() => setInstrumentoSelecionado(inst)}
+                      className={`bg-white p-4 rounded-xl border transition-all cursor-pointer shadow-xs ${
+                        isSelected
+                          ? 'border-teal-600 ring-2 ring-teal-100'
+                          : isVencido
+                          ? 'border-rose-300 ring-1 ring-rose-100'
+                          : isProximo
+                          ? 'border-amber-300'
+                          : 'border-slate-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-900">{inst.codigoInstrumento}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              {inst.tipoInstrumento}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                inst.status === 'CALIBRADO'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : inst.status === 'PROXIMO_VENCER'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
+                            >
+                              {inst.status.replace(/_/g, ' ')}
+                            </span>
+                            {inst.bloqueadoParaUso && (
+                              <span className="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
+                                <ShieldAlert className="w-3 h-3" /> Bloqueado para Uso
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-semibold text-slate-800">{inst.nomeInstrumento}</h4>
+                          <p className="text-[11px] text-slate-500">
+                            Faixa: {inst.faixaMedicao} | Tol: {inst.toleranciaAdmissivel} | Resp: {inst.responsavel}
+                          </p>
+                        </div>
+
+                        <div className="text-right space-y-1">
+                          <div className="text-[11px] text-slate-400">Próxima Calibração:</div>
+                          <div className="text-xs font-bold text-slate-900">{inst.dataProximaCalibracao}</div>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              inst.status === 'CALIBRADO'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : inst.status === 'PROXIMO_VENCER'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
+                            className={`text-[10px] font-bold block ${
+                              inst.diasParaVencer < 0
+                                ? 'text-rose-600'
+                                : inst.diasParaVencer <= 30
+                                ? 'text-amber-600'
+                                : 'text-emerald-600'
                             }`}
                           >
-                            {inst.status.replace(/_/g, ' ')}
+                            {inst.diasParaVencer < 0
+                              ? `Vencido há ${Math.abs(inst.diasParaVencer)} dias`
+                              : `Vence em ${inst.diasParaVencer} dias`}
                           </span>
-                          {inst.bloqueadoParaUso && (
-                            <span className="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
-                              <ShieldAlert className="w-3 h-3" /> Bloqueado para Uso
-                            </span>
-                          )}
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-800">{inst.nomeInstrumento}</h4>
-                        <p className="text-[11px] text-slate-500">
-                          Faixa: {inst.faixaMedicao} | Tol: {inst.toleranciaAdmissivel} | Resp: {inst.responsavel}
-                        </p>
-                      </div>
-
-                      <div className="text-right space-y-1">
-                        <div className="text-[11px] text-slate-400">Próxima Calibração:</div>
-                        <div className="text-xs font-bold text-slate-900">{inst.dataProximaCalibracao}</div>
-                        <span
-                          className={`text-[10px] font-bold block ${
-                            inst.diasParaVencer < 0
-                              ? 'text-rose-600'
-                              : inst.diasParaVencer <= 30
-                              ? 'text-amber-600'
-                              : 'text-emerald-600'
-                          }`}
-                        >
-                          {inst.diasParaVencer < 0
-                            ? `Vencido há ${Math.abs(inst.diasParaVencer)} dias`
-                            : `Vence em ${inst.diasParaVencer} dias`}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Detalhes da Calibração */}
@@ -1776,6 +1847,418 @@ export function PatrimonioViewer({ empresaAtiva }: PatrimonioViewerProps) {
                   className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold"
                 >
                   Confirmar Afiação
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CADASTRAR NOVA FERRAMENTA / MATRIZ */}
+      {showModalNovaFerramenta && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Cadastrar Nova Ferramenta / Matriz</h3>
+                  <p className="text-[11px] text-slate-500">Controle de estampo, punção, molde ou ferramenta de corte</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowModalNovaFerramenta(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleApiAction(
+                  'cadastrar_ferramenta',
+                  formFerramenta,
+                  'Ferramenta / Matriz cadastrada com sucesso!',
+                  () => {
+                    setShowModalNovaFerramenta(false);
+                    setFormFerramenta({
+                      codigo: '',
+                      nome: '',
+                      categoria: 'PUNCAO_MATRIZ_DOBRA',
+                      localizacao: 'Armário Ferramentaria Gaveta A1',
+                      responsavel: 'Marcio Silva (Ferramenteiro)',
+                      condicao: 'EXCELENTE',
+                      ciclosUsoAtual: 0,
+                      limiteCiclosAfiacao: 50000,
+                      motivoCondicaoInadequada: '',
+                    });
+                  }
+                );
+              }}
+              className="space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Código / TAG da Ferramenta *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: FER-PUNC-008"
+                    value={formFerramenta.codigo}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, codigo: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Categoria / Tipo *</label>
+                  <select
+                    value={formFerramenta.categoria}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, categoria: e.target.value as CategoriaFerramenta })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  >
+                    <option value="PUNCAO_MATRIZ_DOBRA">Punção / Matriz de Dobra CNC</option>
+                    <option value="ESTAMPO_CORTE">Estampo de Corte Progressivo</option>
+                    <option value="MOLDE_INJECAO">Molde de Injeção / Termoformagem</option>
+                    <option value="DISCO_FRESA_CORTE">Fresa / Disco / Ferramenta de Usinagem</option>
+                    <option value="GABARITO_SOLDA">Gabarito de Soldagem / Montagem</option>
+                    <option value="OUTROS">Outra Ferramenta Especial</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Nome / Descrição da Ferramenta *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Jogo de Punção e Matriz V-12mm Aço Ferramenta Tratado"
+                  value={formFerramenta.nome}
+                  onChange={(e) => setFormFerramenta({ ...formFerramenta, nome: e.target.value })}
+                  className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Localização / Setor de Alocação *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Armário Ferramentaria Gaveta A1"
+                    value={formFerramenta.localizacao}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, localizacao: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Responsável / Custodiante *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Marcio Silva (Ferramenteiro)"
+                    value={formFerramenta.responsavel}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, responsavel: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Condição Inicial *</label>
+                  <select
+                    value={formFerramenta.condicao}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, condicao: e.target.value as CondicaoFerramenta })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  >
+                    <option value="EXCELENTE">Excelente (Nova / Retificada)</option>
+                    <option value="BOA">Boa (Operacional)</option>
+                    <option value="DESGASTADA">Desgastada (Próx. Afiação)</option>
+                    <option value="INADEQUADA_AVARIADA">Inadequada / Avariada</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Ciclos Atuais</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formFerramenta.ciclosUsoAtual}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, ciclosUsoAtual: Number(e.target.value) })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Limite p/ Afiação (Ciclos)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formFerramenta.limiteCiclosAfiacao}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, limiteCiclosAfiacao: Number(e.target.value) })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {formFerramenta.condicao === 'INADEQUADA_AVARIADA' && (
+                <div>
+                  <label className="font-semibold text-rose-700 block mb-1">Motivo da Avaria / Restrição</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Dente trincado ou desgaste excessivo na matriz"
+                    value={formFerramenta.motivoCondicaoInadequada}
+                    onChange={(e) => setFormFerramenta({ ...formFerramenta, motivoCondicaoInadequada: e.target.value })}
+                    className="w-full p-2.5 border border-rose-300 rounded-lg bg-rose-50 text-rose-900 font-medium focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-hidden"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowModalNovaFerramenta(false)}
+                  className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Salvar Ferramenta
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CADASTRAR NOVO INSTRUMENTO DE MEDIÇÃO */}
+      {showModalNovoInstrumento && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-teal-50 text-teal-600 rounded-lg">
+                  <Gauge className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Cadastrar Novo Instrumento de Medição</h3>
+                  <p className="text-[11px] text-slate-500">Metrologia, rastreabilidade RBC e controle de calibração</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowModalNovoInstrumento(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleApiAction(
+                  'cadastrar_instrumento',
+                  formInstrumento,
+                  'Instrumento de medição cadastrado e registrado na metrologia!',
+                  () => {
+                    setShowModalNovoInstrumento(false);
+                    setFormInstrumento({
+                      codigoInstrumento: '',
+                      nomeInstrumento: '',
+                      tipoInstrumento: 'PAQUIMETRO',
+                      localizacao: 'Controle de Qualidade',
+                      responsavel: 'Juliana Paes (Qualidade)',
+                      faixaMedicao: '0 - 150 mm (Resolução: 0.01 mm)',
+                      toleranciaAdmissivel: '± 0.02 mm',
+                      frequenciaMeses: 12,
+                      dataUltimaCalibracao: new Date().toISOString().split('T')[0],
+                      numeroCertificado: 'CERT-RBC-2026-',
+                      laboratorioCalibrador: 'Laboratório Metrológico RBC/Inmetro',
+                      resultadoInicial: 'APROVADO',
+                    });
+                  }
+                );
+              }}
+              className="space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Código / TAG / N° Série *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: CAL-PAQ-015"
+                    value={formInstrumento.codigoInstrumento}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, codigoInstrumento: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Tipo de Instrumento *</label>
+                  <select
+                    value={formInstrumento.tipoInstrumento}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, tipoInstrumento: e.target.value as TipoInstrumentoCalibracao })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  >
+                    <option value="PAQUIMETRO">Paquímetro Digital / Analógico</option>
+                    <option value="MICROMETRO">Micrômetro Externo / Interno</option>
+                    <option value="RELOGIO_COMPARADOR">Relógio Comparador / Apalpador</option>
+                    <option value="GONIOMETRO">Goniômetro / Transferidor de Grau</option>
+                    <option value="MANOMETRO">Manômetro de Pressão</option>
+                    <option value="TERMOMETRO_INFRAVERMELHO">Termômetro Digital / Infravermelho</option>
+                    <option value="BALANCA_PRECISAO">Balança de Precisão</option>
+                    <option value="TORQUIMETRO">Torquímetro de Estalo / Digital</option>
+                    <option value="RUGOSIMETRO">Rugosímetro de Superfície</option>
+                    <option value="GABARITO_FIXO">Gabarito Fixo de Controle (Passa / Não-Passa)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Nome / Descrição do Instrumento *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Paquímetro Digital Mitutoyo 150mm IP67"
+                  value={formInstrumento.nomeInstrumento}
+                  onChange={(e) => setFormInstrumento({ ...formInstrumento, nomeInstrumento: e.target.value })}
+                  className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Faixa de Medição *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: 0 - 150 mm (Resolução: 0.01 mm)"
+                    value={formInstrumento.faixaMedicao}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, faixaMedicao: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Tolerância Admissível *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: ± 0.02 mm"
+                    value={formInstrumento.toleranciaAdmissivel}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, toleranciaAdmissivel: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Setor / Localização *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Sala de Metrologia e Controle de Qualidade"
+                    value={formInstrumento.localizacao}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, localizacao: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Responsável Metrologia *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Juliana Paes (Inspetora de Qualidade)"
+                    value={formInstrumento.responsavel}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, responsavel: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Frequência (Meses) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    required
+                    value={formInstrumento.frequenciaMeses}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, frequenciaMeses: Number(e.target.value) })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Data Última Calibração *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formInstrumento.dataUltimaCalibracao}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, dataUltimaCalibracao: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Resultado Laudo</label>
+                  <select
+                    value={formInstrumento.resultadoInicial}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, resultadoInicial: e.target.value as any })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  >
+                    <option value="APROVADO">Aprovado</option>
+                    <option value="APROVADO_COM_RESTRICAO">Aprovado c/ Restrição</option>
+                    <option value="REPROVADO">Reprovado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Nº Certificado RBC *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: CERT-RBC-2026-9812"
+                    value={formInstrumento.numeroCertificado}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, numeroCertificado: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Laboratório Calibrador RBC *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Laboratório RBC Inmetro Acreditado"
+                    value={formInstrumento.laboratorioCalibrador}
+                    onChange={(e) => setFormInstrumento({ ...formInstrumento, laboratorioCalibrador: e.target.value })}
+                    className="w-full p-2.5 border rounded-lg bg-slate-50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowModalNovoInstrumento(false)}
+                  className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Salvar Instrumento
                 </button>
               </div>
             </form>
